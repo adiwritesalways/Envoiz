@@ -5,8 +5,11 @@ import { AuthForm } from "@/components/auth/AuthForm";
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Sign up — Receiptly" },
-      { name: "description", content: "Create your free Receiptly account and start sending beautiful invoices in minutes." },
+      { title: "Sign up - Envoiz" },
+      {
+        name: "description",
+        content: "Create your free Envoiz account and start sending beautiful invoices in minutes.",
+      },
     ],
   }),
   component: SignupPage,

@@ -1,16 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-function LogoMark() {
-  return (
-    <div className="h-9 w-9 rounded-[10px] bg-black text-white grid place-items-center">
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 4h10l4 4v12H5z" />
-        <path d="M9 10h6M9 14h6M9 18h4" />
-      </svg>
-    </div>
-  );
-}
+import { BrandLogo } from "@/components/BrandLogo";
+import { brandName } from "@/lib/envoiz";
 
 interface AuthShellProps {
   title: string;
@@ -22,38 +14,38 @@ interface AuthShellProps {
 export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased relative overflow-hidden">
-      <div className="absolute inset-0 grid-bg pointer-events-none opacity-70" />
-      <div className="relative min-h-screen flex flex-col">
-        <header className="px-6 py-6">
-          <Link to="/" className="inline-flex items-center gap-2.5 font-semibold tracking-tight">
-            <LogoMark />
-            <span className="text-[17px]">Receiptly</span>
-          </Link>
-        </header>
-
-        <main className="flex-1 flex items-center justify-center px-6 pb-16">
-          <div className="w-full max-w-[420px] animate-fade-up">
-            <div className="text-center mb-8">
-              <h1 className="text-[32px] font-semibold tracking-[-0.03em] leading-tight">{title}</h1>
-              <p className="mt-2 text-[14.5px] text-muted-foreground">{subtitle}</p>
-            </div>
-
-            <div className="glass rounded-2xl p-7">
-              {children}
-            </div>
-
-            <p className="mt-6 text-center text-[13.5px] text-muted-foreground">
-              {footer}
-            </p>
-
-            <p className="mt-8 text-center text-[11.5px] text-muted-foreground/80 leading-relaxed">
-              By continuing, you agree to Receiptly's{" "}
-              <a href="#" className="underline hover:text-foreground">Terms</a> and{" "}
-              <a href="#" className="underline hover:text-foreground">Privacy Policy</a>.
-            </p>
+      <div className="absolute inset-0 grid-bg pointer-events-none opacity-60" />
+      <main className="relative mx-auto flex min-h-screen w-full max-w-[480px] items-center px-4 py-10 sm:px-6">
+        <section className="w-full animate-fade-up">
+          <div className="mb-8 text-center">
+            <Link to="/" className="inline-flex items-center justify-center" aria-label={brandName}>
+              <BrandLogo className="h-11 w-auto" />
+            </Link>
+            <h1 className="mt-6 text-[32px] font-semibold tracking-[-0.03em] leading-tight">
+              {title}
+            </h1>
+            <p className="mt-2 text-[14.5px] text-muted-foreground">{subtitle}</p>
           </div>
-        </main>
-      </div>
+
+          <div className="rounded-[2rem] border border-hairline bg-white/90 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_20px_60px_rgba(0,0,0,0.08)] sm:p-8">
+            {children}
+          </div>
+
+          <p className="mt-6 text-center text-[13.5px] text-muted-foreground">{footer}</p>
+
+          <p className="mt-8 text-center text-[11.5px] leading-relaxed text-muted-foreground/80">
+            By continuing, you agree to {brandName}'s{" "}
+            <a href="#" className="underline hover:text-foreground">
+              Terms
+            </a>{" "}
+            and{" "}
+            <a href="#" className="underline hover:text-foreground">
+              Privacy Policy
+            </a>
+            .
+          </p>
+        </section>
+      </main>
     </div>
   );
 }
