@@ -1,6 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { AuthShell } from "@/components/auth/AuthShell";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+
 import { AuthForm } from "@/components/auth/AuthForm";
+import { useAuth } from "@/components/auth/auth-context";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -16,6 +19,15 @@ export const Route = createFileRoute("/signup")({
 });
 
 function SignupPage() {
+  const { session, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && session) {
+      void navigate({ to: "/dashboard" });
+    }
+  }, [loading, navigate, session]);
+
   return (
     <AuthShell
       title="Create your account"

@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ExternalLink, ShieldCheck, DollarSign } from "lucide-react";
+import { ExternalLink, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
+import { useAuth } from "@/components/auth/auth-context";
 import { DashboardPage, Panel } from "@/components/envoiz/DashboardUI";
 import {
   brandName,
@@ -27,13 +29,12 @@ export const Route = createFileRoute("/dashboard/settings")({
 });
 
 function SettingsPage() {
-  const [email, setEmail] = useState("alex@envoiz.com");
+  const { user } = useAuth();
   const [companyName, setCompanyName] = useState("Envoiz Studio");
   const [companyAddress, setCompanyAddress] = useState("Dhanmondi, Dhaka, Bangladesh");
   const [defaultCurrencyValue, setDefaultCurrencyValue] = useState<CurrencyCode>(defaultCurrency);
 
   useEffect(() => {
-    setEmail(readStorageValue(settingsStorageKeys.email, "alex@envoiz.com"));
     setCompanyName(readStorageValue(settingsStorageKeys.companyName, "Envoiz Studio"));
     setCompanyAddress(
       readStorageValue(settingsStorageKeys.companyAddress, "Dhanmondi, Dhaka, Bangladesh"),
@@ -44,10 +45,10 @@ function SettingsPage() {
   }, []);
 
   const savePreferences = () => {
-    writeStorageValue(settingsStorageKeys.email, email);
     writeStorageValue(settingsStorageKeys.companyName, companyName);
     writeStorageValue(settingsStorageKeys.companyAddress, companyAddress);
     writeStorageValue(settingsStorageKeys.defaultCurrency, defaultCurrencyValue);
+    toast.success("Preferences saved successfully.");
   };
 
   return (
@@ -66,13 +67,13 @@ function SettingsPage() {
     >
       <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <Panel title="Profile" description="Read-only identity details for the workspace owner.">
-          <Field label="Email" value={email} readOnly />
+          <Field label="Email" value={user?.email ?? ""} readOnly />
           <div className="mt-4 rounded-3xl bg-surface/60 p-4 text-[13px] text-muted-foreground">
             <div className="flex items-center gap-2 font-medium text-foreground">
               <ShieldCheck className="h-4 w-4" /> Protected account
             </div>
             <p className="mt-2 leading-relaxed">
-              This email is treated as a display-only profile field in the frontend mockup.
+              This email comes from your Supabase auth session and stays read-only here.
             </p>
           </div>
         </Panel>
@@ -120,7 +121,6 @@ function SettingsPage() {
               onClick={savePreferences}
               className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-colors hover:opacity-90"
             >
-              <DollarSign className="h-3.5 w-3.5" />
               Save preferences
             </button>
           </div>

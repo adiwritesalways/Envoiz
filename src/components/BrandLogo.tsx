@@ -1,5 +1,4 @@
-import { brandName } from "@/lib/envoiz";
-import { envoizLpLogoDataUri } from "@/lib/envoiz-logo-data";
+import { brandName, logoUrl } from "@/lib/envoiz";
 
 type BrandLogoProps = {
   variant?: "horizontal" | "icon";
@@ -10,7 +9,7 @@ export function BrandLogo({ variant = "horizontal", className }: BrandLogoProps)
   if (variant === "icon") {
     return (
       <img
-        src={envoizLpLogoDataUri}
+        src={logoUrl}
         alt={brandName}
         width={248}
         height={80}
@@ -25,7 +24,7 @@ export function BrandLogo({ variant = "horizontal", className }: BrandLogoProps)
 
   return (
     <img
-      src={envoizLpLogoDataUri}
+      src={logoUrl}
       alt={brandName}
       width={248}
       height={80}

@@ -1,10 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, ChevronDown, Plus, Trash2, ArrowRight } from "lucide-react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
-import { BrandLogo } from "@/components/BrandLogo";
-import { DashboardPage, Panel, StatusPill } from "@/components/envoiz/DashboardUI";
+import { DashboardPage, Panel } from "@/components/envoiz/DashboardUI";
+import { RecentInvoicesList } from "@/components/envoiz/RecentInvoicesList";
+import { InvoiceSuccessDialog } from "@/components/envoiz/InvoiceSuccessDialog";
+import { useAuth } from "@/components/auth/auth-context";
+import { supabase } from "@/lib/supabase";
 import {
+  applyExportColorFallbacks,
   brandName,
   currencyOptions,
   defaultCurrency,
@@ -13,6 +20,13 @@ import {
   settingsStorageKeys,
   type CurrencyCode,
 } from "@/lib/envoiz";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 type InvoiceItem = {
   id: number;
@@ -21,10 +35,45 @@ type InvoiceItem = {
   unitPrice: number;
 };
 
+type StoredInvoiceItemRow = {
+  product: string;
+  quantity: number;
+  unit_price: number;
+};
+
+type StoredInvoiceRow = {
+  id: string;
+  invoice_number?: string | null;
+  client_name?: string | null;
+  client_email?: string | null;
+  billing_address?: string | null;
+  issue_date?: string | null;
+  due_date?: string | null;
+  payment_status?: PaymentStatus | null;
+  currency?: CurrencyCode | null;
+  company_name?: string | null;
+  company_address?: string | null;
+  discount?: number | null;
+  notes?: string | null;
+};
+
+type PaymentStatus = "Pending" | "Paid" | "Overdue";
+
+const paymentStatusOptions: PaymentStatus[] = ["Pending", "Paid", "Overdue"];
+
 const money = (value: number, currency: CurrencyCode) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(
     value || 0,
   );
+
+const formatDateLabel = (value: string | null | undefined) => {
+  if (!value) return "—";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+};
+
+const toDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
 
 export const Route = createFileRoute("/dashboard/invoices")({
   head: () => ({
@@ -41,12 +90,32 @@ export const Route = createFileRoute("/dashboard/invoices")({
 });
 
 function InvoicesPage() {
+  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [savedInvoiceNumber, setSavedInvoiceNumber] = useState("");
+  const [wasUpdate, setWasUpdate] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
+
+  const today = useMemo(() => new Date(2026, 5, 27), []);
+  const defaultDueDate = useMemo(() => {
+    const date = new Date(today);
+    date.setDate(date.getDate() + 14);
+    return date;
+  }, [today]);
+
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [billingAddress, setBillingAddress] = useState("");
   const [currency, setCurrency] = useState<CurrencyCode>(defaultCurrency);
-  const [status, setStatus] = useState<"Pending" | "Paid">("Pending");
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("Pending");
+  const [issueDate, setIssueDate] = useState(toDateInputValue(today));
+  const [dueDate, setDueDate] = useState(toDateInputValue(defaultDueDate));
   const [companyName, setCompanyName] = useState("Envoiz Studio");
   const [companyAddress, setCompanyAddress] = useState("Dhanmondi, Dhaka, Bangladesh");
+  const [discount, setDiscount] = useState(0);
+  const [notes, setNotes] = useState("");
   const [items, setItems] = useState<InvoiceItem[]>([
     { id: 1, product: "Brand identity refresh", quantity: 1, unitPrice: 1200 },
   ]);
@@ -70,13 +139,143 @@ function InvoicesPage() {
     [items],
   );
 
-  const invoiceNumber = formatInvoiceNumber(1);
-  const createdAt = new Date(2026, 5, 27).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const safeDiscount = Math.min(Math.max(0, discount), subtotal);
+  const grandTotal = Math.max(0, subtotal - safeDiscount);
 
+  const invoiceNumber = formatInvoiceNumber(1);
+
+  const handleSave = async () => {
+    if (!user) {
+      toast.error("You must be logged in to save an invoice.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      let invoiceData;
+      if (editingInvoiceId) {
+        const { data, error: invoiceError } = await supabase
+          .from("envoiz_invoices")
+          .update({
+            invoice_number: invoiceNumber,
+            client_name: clientName,
+            client_email: clientEmail,
+            billing_address: billingAddress,
+            issue_date: issueDate,
+            due_date: dueDate,
+            payment_status: paymentStatus,
+            currency: currency,
+            discount: discount,
+            notes: notes,
+            company_name: companyName,
+            company_address: companyAddress,
+          })
+          .eq("id", editingInvoiceId)
+          .select()
+          .single();
+
+        if (invoiceError) throw invoiceError;
+        invoiceData = data;
+
+        // Remove old items before inserting new ones
+        await supabase.from("envoiz_invoice_items").delete().eq("invoice_id", editingInvoiceId);
+      } else {
+        const { data, error: invoiceError } = await supabase
+          .from("envoiz_invoices")
+          .insert({
+            user_id: user.id,
+            invoice_number: invoiceNumber,
+            client_name: clientName,
+            client_email: clientEmail,
+            billing_address: billingAddress,
+            issue_date: issueDate,
+            due_date: dueDate,
+            payment_status: paymentStatus,
+            currency: currency,
+            discount: discount,
+            notes: notes,
+            company_name: companyName,
+            company_address: companyAddress,
+          })
+          .select()
+          .single();
+
+        if (invoiceError) throw invoiceError;
+        invoiceData = data;
+      }
+
+      const itemsToInsert = items.map((item) => ({
+        invoice_id: invoiceData.id,
+        product: item.product,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+      }));
+
+      if (itemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase
+          .from("envoiz_invoice_items")
+          .insert(itemsToInsert);
+
+        if (itemsError) throw itemsError;
+      }
+
+      toast.success(
+        `Invoice ${editingInvoiceId ? "updated" : "saved"} successfully as ${invoiceNumber}.`,
+      );
+      setWasUpdate(!!editingInvoiceId);
+      setEditingInvoiceId(invoiceData.id);
+      setSavedInvoiceNumber(invoiceNumber);
+      setShowSuccess(true);
+    } catch (error: unknown) {
+      console.error("Save invoice error:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "object" && error !== null
+            ? "message" in error && typeof error.message === "string"
+              ? error.message
+              : "details" in error && typeof error.details === "string"
+                ? error.details
+                : "Unknown error"
+            : "Unknown error";
+      toast.error(`Failed to save: ${message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDownload = async (format: "pdf" | "png") => {
+    if (!captureRef.current) return;
+
+    try {
+      const canvas = await html2canvas(captureRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        onclone: applyExportColorFallbacks,
+      });
+
+      if (format === "png") {
+        const link = document.createElement("a");
+        link.download = `Invoice-${invoiceNumber}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        toast.success("Invoice downloaded as PNG.");
+      } else {
+        const imgData = canvas.toDataURL("image/jpeg", 1.0);
+        const pdf = new jsPDF("p", "pt", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`Invoice-${invoiceNumber}.pdf`);
+        toast.success("Invoice downloaded as PDF.");
+      }
+    } catch (error: unknown) {
+      console.error("Download error:", error);
+      toast.error(`Download failed: ${error instanceof Error ? error.message : "Check console"}`);
+    }
+  };
   const updateItem = (id: number, field: keyof InvoiceItem, value: string | number) => {
     setItems((current) =>
       current.map((item) => {
@@ -99,11 +298,47 @@ function InvoicesPage() {
     );
   };
 
+  const handleSelectInvoice = async (inv: any) => {
+    setEditingInvoiceId(inv.id);
+    setClientName(inv.client_name || "");
+    setClientEmail(inv.client_email || "");
+    setBillingAddress(inv.billing_address || "");
+    setIssueDate(inv.issue_date || toDateInputValue(today));
+    setDueDate(inv.due_date || toDateInputValue(defaultDueDate));
+    setPaymentStatus(inv.payment_status || "Pending");
+    setCurrency(inv.currency || defaultCurrency);
+    setCompanyName(inv.company_name || "Envoiz Studio");
+    setCompanyAddress(inv.company_address || "Dhanmondi, Dhaka, Bangladesh");
+    setDiscount(inv.discount || 0);
+    setNotes(inv.notes || "");
+
+    // Fetch items
+    const { data: itemsData } = await supabase
+      .from("envoiz_invoice_items")
+      .select("*")
+      .eq("invoice_id", inv.id);
+
+    if (itemsData && itemsData.length > 0) {
+      setItems(
+        itemsData.map((item: StoredInvoiceItemRow) => ({
+          id: Math.random(),
+          product: item.product,
+          quantity: item.quantity,
+          unitPrice: item.unit_price,
+        })),
+      );
+    } else {
+      setItems([{ id: 1, product: "", quantity: 1, unitPrice: 0 }]);
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <DashboardPage
       eyebrow="Invoices"
-      title="Create a premium invoice without friction."
-      description="Invoice items update totals instantly, with no VAT, no tax, and no discount logic added."
+      title="Create New Invoice"
+      description="Invoice items update totals instantly, with no tax logic added."
       actions={
         <>
           <Link
@@ -112,19 +347,38 @@ function InvoicesPage() {
           >
             Settings
           </Link>
-          <button className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-colors hover:opacity-90">
-            Save draft
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-colors hover:opacity-90 disabled:opacity-50"
+          >
+            {isSaving ? "Saving..." : editingInvoiceId ? "Update Invoice" : "Save Invoice"}
           </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-colors hover:opacity-90">
+                Download Invoice <ArrowRight className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleDownload("pdf")}>
+                Download PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownload("png")}>
+                Download PNG
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </>
       }
     >
-      <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:gap-8 xl:items-start 2xl:grid-cols-[1.05fr_0.95fr]">
         <Panel
-          title="Invoice editor"
+          title="Invoice Details"
           description="A structured draft area for client details and unlimited line items."
-          className="space-y-6"
+          className="min-w-0 space-y-6 xl:p-7"
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2">
             <Field
               label="Client Name"
               value={clientName}
@@ -140,28 +394,58 @@ function InvoicesPage() {
             />
           </div>
 
-          <div className="rounded-3xl border border-hairline bg-surface/50 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 className="text-[14px] font-medium">Invoice Items</h3>
+          <Field
+            label="Billing Address"
+            optional
+            value={billingAddress}
+            onChange={setBillingAddress}
+            placeholder="Street, city, state, postal code, country"
+          />
+
+          <div className="grid gap-5 md:grid-cols-3">
+            <DateField label="Issue Date" value={issueDate} onChange={setIssueDate} />
+            <DateField label="Due Date" value={dueDate} onChange={setDueDate} />
+            <div className="min-w-0">
+              <label className="text-[12px] text-muted-foreground">Payment Status</label>
+              <div className="relative mt-1.5">
+                <select
+                  value={paymentStatus}
+                  onChange={(event) => setPaymentStatus(event.target.value as PaymentStatus)}
+                  className="h-11 w-full appearance-none rounded-2xl border border-hairline bg-white pl-3 pr-10 text-[14px] outline-none transition focus:border-foreground/20"
+                >
+                  {paymentStatusOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-hairline bg-surface/50 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-[14px] font-medium">Items Details</h3>
                 <p className="mt-1 text-[12.5px] text-muted-foreground">
                   Add as many products or services as you need.
                 </p>
               </div>
               <button
                 onClick={addRow}
-                className="inline-flex items-center gap-2 rounded-full bg-foreground px-3 py-2 text-[12px] font-medium text-background transition-colors hover:opacity-90"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-foreground px-3 py-2 text-[12px] font-medium text-background transition-colors hover:opacity-90"
               >
-                <Plus className="h-3.5 w-3.5" /> Add row
+                <Plus className="h-3.5 w-3.5" /> Add Item
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
-              <div className="hidden gap-3 rounded-2xl bg-white px-4 py-3 text-[12px] uppercase tracking-[0.16em] text-muted-foreground md:grid md:grid-cols-[1.6fr_0.6fr_0.8fr_0.8fr_0.3fr]">
-                <span>Product / Service</span>
-                <span>Quantity</span>
-                <span>Unit Price</span>
-                <span>Row Total</span>
+            <div className="mt-5 space-y-3">
+              <div className="hidden gap-x-4 gap-y-2 rounded-2xl bg-white px-4 py-3 text-[12px] uppercase tracking-[0.16em] text-muted-foreground lg:grid lg:grid-cols-[minmax(0,2.2fr)_minmax(72px,0.75fr)_minmax(96px,1.05fr)_minmax(96px,1.05fr)_2.75rem] lg:items-center xl:hidden 2xl:grid">
+                <span>Item</span>
+                <span>QTY</span>
+                <span>Cost</span>
+                <span className="text-right">Amount</span>
                 <span />
               </div>
               {items.map((item) => {
@@ -169,193 +453,332 @@ function InvoicesPage() {
                 return (
                   <div
                     key={item.id}
-                    className="grid gap-3 rounded-2xl border border-hairline bg-white p-4 md:grid-cols-[1.6fr_0.6fr_0.8fr_0.8fr_0.3fr] md:items-center"
+                    className="grid gap-4 rounded-2xl border border-hairline bg-white p-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3 lg:grid-cols-[minmax(0,2.2fr)_minmax(72px,0.75fr)_minmax(96px,1.05fr)_minmax(96px,1.05fr)_2.75rem] lg:items-center lg:gap-x-4 lg:gap-y-0 xl:grid-cols-2 xl:gap-y-3 2xl:grid-cols-[minmax(0,2.2fr)_minmax(72px,0.75fr)_minmax(96px,1.05fr)_minmax(96px,1.05fr)_2.75rem] 2xl:items-center 2xl:gap-x-4 2xl:gap-y-0"
                   >
-                    <InputField
-                      value={item.product}
-                      onChange={(value) => updateItem(item.id, "product", value)}
-                      placeholder="Consulting session"
-                    />
-                    <InputField
-                      value={String(item.quantity)}
-                      onChange={(value) => updateItem(item.id, "quantity", value)}
-                      type="number"
-                      min={1}
-                      placeholder="1"
-                    />
-                    <InputField
-                      value={String(item.unitPrice)}
-                      onChange={(value) => updateItem(item.id, "unitPrice", value)}
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      placeholder="0.00"
-                    />
-                    <div className="rounded-2xl bg-surface/70 px-4 py-3 text-[14px] font-medium tabular-nums">
-                      {money(total, currency)}
+                    <div className="min-w-0 sm:col-span-2 lg:col-span-1 xl:col-span-2 2xl:col-span-1">
+                      <span className="mb-1.5 block text-[11px] text-muted-foreground lg:hidden xl:block 2xl:hidden">
+                        Item
+                      </span>
+                      <InputField
+                        value={item.product}
+                        onChange={(value) => updateItem(item.id, "product", value)}
+                        placeholder="Consulting session"
+                      />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeRow(item.id)}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="min-w-0">
+                      <span className="mb-1.5 block text-[11px] text-muted-foreground lg:hidden xl:block 2xl:hidden">
+                        Quantity
+                      </span>
+                      <InputField
+                        value={String(item.quantity)}
+                        onChange={(value) =>
+                          updateItem(item.id, "quantity", value.replace(/[^0-9]/g, ""))
+                        }
+                        type="number"
+                        min={1}
+                        placeholder="1"
+                        inputMode="numeric"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="mb-1.5 block text-[11px] text-muted-foreground lg:hidden xl:block 2xl:hidden">
+                        Cost
+                      </span>
+                      <CurrencyField
+                        currency={currency}
+                        value={item.unitPrice}
+                        onChange={(value) => updateItem(item.id, "unitPrice", value)}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="mb-1.5 block text-[11px] text-muted-foreground lg:hidden xl:block 2xl:hidden">
+                        Amount
+                      </span>
+                      <div className="flex h-11 items-center justify-end rounded-2xl bg-surface/70 px-4 text-[14px] font-medium tabular-nums">
+                        {money(total, currency)}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end sm:col-span-2 lg:col-span-1 lg:justify-center xl:col-span-2 xl:justify-end 2xl:col-span-1 2xl:justify-center">
+                      <button
+                        type="button"
+                        onClick={() => removeRow(item.id)}
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Remove item</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
+          <div className="grid gap-5 md:grid-cols-3">
+            <div className="min-w-0">
+              <label className="text-[12px] text-muted-foreground">
+                Discount <span className="text-muted-foreground/60">(optional)</span>
+              </label>
+              <CurrencyField
+                currency={currency}
+                value={discount}
+                onChange={setDiscount}
+                wrapperClassName="mt-1.5"
+              />
+            </div>
+            <div className="min-w-0">
               <label className="text-[12px] text-muted-foreground">Currency</label>
-              <select
-                value={currency}
-                onChange={(event) => setCurrency(event.target.value as CurrencyCode)}
-                className="mt-1.5 h-11 w-full rounded-2xl border border-hairline bg-white px-3 text-[14px] outline-none transition focus:border-foreground/20"
-              >
-                {currencyOptions.map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {option.code} - {option.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative mt-1.5">
+                <select
+                  value={currency}
+                  onChange={(event) => setCurrency(event.target.value as CurrencyCode)}
+                  className="h-11 w-full appearance-none rounded-2xl border border-hairline bg-white pl-3 pr-10 text-[14px] outline-none transition focus:border-foreground/20"
+                >
+                  {currencyOptions.map((option) => (
+                    <option key={option.code} value={option.code}>
+                      {option.code} - {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
             </div>
-            <div>
-              <label className="text-[12px] text-muted-foreground">Status</label>
-              <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value as "Pending" | "Paid")}
-                className="mt-1.5 h-11 w-full rounded-2xl border border-hairline bg-white px-3 text-[14px] outline-none transition focus:border-foreground/20"
-              >
-                <option value="Pending">Pending</option>
-                <option value="Paid">Paid</option>
-              </select>
+            <div className="min-w-0">
+              <label className="text-[12px] text-muted-foreground">Total</label>
+              <div className="mt-1.5 flex h-11 w-full items-center rounded-2xl border border-hairline bg-surface/70 px-3 text-[14px] font-medium tabular-nums">
+                {money(grandTotal, currency)}
+              </div>
             </div>
+          </div>
+
+          <div>
+            <label className="text-[12px] text-muted-foreground">
+              Notes to Customer <span className="text-muted-foreground/60">(optional)</span>
+            </label>
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              rows={3}
+              placeholder="e.g. Thanks for the opportunity to work together — happy to answer any questions."
+              className="mt-1.5 w-full resize-none rounded-2xl border border-hairline bg-white px-3 py-3 text-[14px] leading-relaxed outline-none transition placeholder:text-muted-foreground/60 focus:border-foreground/20"
+            />
           </div>
 
           <div className="flex flex-wrap items-center gap-3 rounded-3xl bg-surface/60 p-4 text-[13px] text-muted-foreground">
             <span className="rounded-full bg-white px-3 py-1 font-medium text-foreground">
-              ENV-000001
+              {invoiceNumber}
             </span>
-            <span>No VAT</span>
+            <span>{currency}</span>
             <span>No tax</span>
-            <span>No discount</span>
           </div>
         </Panel>
 
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           <Panel
-            title="Template preview"
+            title="Preview"
             description="A clean printable invoice, ready for download or browser printing."
             className="overflow-hidden"
           >
-            <div className="rounded-[2rem] border border-hairline bg-white p-6 shadow-[0_20px_70px_rgba(0,0,0,0.08)]">
-              <div className="flex items-start justify-between gap-6 border-b border-hairline pb-5">
+            <div
+              ref={captureRef}
+              className="rounded-[2rem] border border-hairline bg-white p-5 shadow-[0_20px_70px_rgba(0,0,0,0.08)] sm:p-8 md:p-10 relative"
+            >
+              <div className="flex flex-col gap-6 border-b border-hairline pb-6 sm:flex-row sm:items-start sm:justify-between">
                 <div className="max-w-xs">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Company
-                  </p>
-                  <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">{companyName}</h3>
+                  <h3 className="text-[22px] font-semibold tracking-[-0.04em] sm:text-[26px]">
+                    {companyName}
+                  </h3>
                   <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
                     {companyAddress}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right">
                   <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                     Invoice
                   </p>
-                  <div className="mt-2 text-2xl font-semibold tracking-[-0.04em]">
+                  <span className="mt-2 inline-flex rounded-full border border-hairline px-3 py-1 text-[13px] font-medium tabular-nums">
                     {invoiceNumber}
-                  </div>
-                  <div className="mt-2 flex items-center justify-end gap-2">
-                    <StatusPill status={status} />
-                    <span className="text-[12px] text-muted-foreground">{createdAt}</span>
+                  </span>
+                  <div className="mt-3 flex items-center gap-2 sm:justify-end">
+                    <span className="text-[12px] text-muted-foreground">
+                      Issued {formatDateLabel(issueDate)}
+                    </span>
+                    <PaymentStatusPill status={paymentStatus} />
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-6 border-b border-hairline py-5 md:grid-cols-2">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Bill to
-                  </p>
-                  <div className="mt-2 text-[14px] font-medium">{clientName || "Client name"}</div>
-                  <div className="mt-1 text-[13px] text-muted-foreground">
-                    {clientEmail || "client@email.com"}
+              <div className="mt-6 overflow-hidden rounded-2xl border border-hairline">
+                <div className="grid grid-cols-1 divide-y divide-hairline sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                  <div className="p-5">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      Billed to
+                    </p>
+                    <div className="mt-2 text-[14px] font-medium">
+                      {clientName || "Client name"}
+                    </div>
+                    {clientEmail && (
+                      <div className="mt-1 text-[13px] text-muted-foreground">{clientEmail}</div>
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      Due date
+                    </p>
+                    <div className="mt-2 text-[14px] font-medium">{formatDateLabel(dueDate)}</div>
                   </div>
                 </div>
-                <div className="md:text-right">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Status
-                  </p>
-                  <div className="mt-2 text-[14px] font-medium">{status}</div>
-                  <p className="mt-1 text-[13px] text-muted-foreground">Currency: {currency}</p>
+                {billingAddress && (
+                  <div className="border-t border-hairline p-5">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      Address
+                    </p>
+                    <div className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                      {billingAddress}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="py-6">
+                <div className="overflow-hidden rounded-2xl border border-hairline">
+                  <div className="flex items-center justify-between gap-4 bg-surface/70 px-5 py-3.5 text-[10.5px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    <span>Item</span>
+                    <span>Amount</span>
+                  </div>
+                  <div className="divide-y divide-hairline">
+                    {items.map((item) => {
+                      const total = item.quantity * item.unitPrice;
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-start justify-between gap-4 px-5 py-4 text-[13px]"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium break-words">{item.product || "Item"}</p>
+                            <p className="mt-1 break-words text-[12px] text-muted-foreground tabular-nums">
+                              {item.quantity} × {money(item.unitPrice, currency)}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-right font-medium tabular-nums">
+                            {money(total, currency)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div className="py-5">
-                <div className="grid grid-cols-[1.6fr_0.5fr_0.7fr_0.7fr] gap-3 border-b border-hairline pb-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                  <span>Product</span>
-                  <span className="text-right">Qty</span>
-                  <span className="text-right">Unit Price</span>
-                  <span className="text-right">Total</span>
-                </div>
-                <div className="space-y-3 py-4">
-                  {items.map((item) => {
-                    const total = item.quantity * item.unitPrice;
-                    return (
-                      <div
-                        key={item.id}
-                        className="grid grid-cols-[1.6fr_0.5fr_0.7fr_0.7fr] gap-3 text-[13px]"
-                      >
-                        <span className="font-medium">{item.product || "Product / service"}</span>
-                        <span className="text-right tabular-nums">{item.quantity}</span>
-                        <span className="text-right tabular-nums">
-                          {money(item.unitPrice, currency)}
-                        </span>
-                        <span className="text-right font-medium tabular-nums">
-                          {money(total, currency)}
-                        </span>
-                      </div>
-                    );
-                  })}
+              <div className="flex justify-end pt-2">
+                <div className="w-full space-y-2.5 sm:max-w-[280px]">
+                  <div className="flex items-center justify-between px-1 text-[13px] text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span className="font-medium text-foreground tabular-nums">
+                      {money(subtotal, currency)}
+                    </span>
+                  </div>
+                  {safeDiscount > 0 && (
+                    <div className="flex items-center justify-between px-1 text-[13px] text-muted-foreground">
+                      <span>Discount</span>
+                      <span className="font-medium text-foreground tabular-nums">
+                        -{money(safeDiscount, currency)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline justify-between border-t border-hairline px-1 pt-3">
+                    <span className="text-[13px] font-medium text-muted-foreground">Total</span>
+                    <span className="text-[22px] font-semibold tracking-[-0.02em] tabular-nums">
+                      {money(grandTotal, currency)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-hairline pt-5">
-                <div>
+              {notes && (
+                <div className="mt-6 border-t border-hairline pt-6">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    Generated by
+                    Notes
                   </p>
-                  <div className="mt-3">
-                    <BrandLogo className="h-8 w-auto" />
-                  </div>
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{notes}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    Grand total
-                  </p>
-                  <div className="mt-2 text-3xl font-semibold tracking-[-0.04em] tabular-nums">
-                    {money(subtotal, currency)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Panel>
-
-          <Panel title="Totals" description="Everything here updates live as you edit the draft.">
-            <div className="space-y-3 text-[13px]">
-              <Row label="Subtotal" value={money(subtotal, currency)} />
-              <Row label="Tax" value="None" />
-              <Row label="VAT" value="None" />
-              <Row label="Grand Total" value={money(subtotal, currency)} emphasized />
+              )}
             </div>
           </Panel>
         </div>
       </div>
+      <RecentInvoicesList user={user} onSelect={handleSelectInvoice} />
+      <InvoiceSuccessDialog
+        open={showSuccess}
+        onOpenChange={setShowSuccess}
+        invoiceNumber={savedInvoiceNumber}
+        isUpdate={wasUpdate}
+      />
     </DashboardPage>
+  );
+}
+
+type RecentUser = { id: string } | null;
+
+function RecentInvoices({ user }: { user: RecentUser }) {
+  const [invoices, setInvoices] = useState<StoredInvoiceRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchInvoices = async () => {
+      const { data, error } = await supabase
+        .from("envoiz_invoices")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) {
+        console.error("Error fetching recent invoices:", error);
+      } else if (data) {
+        setInvoices(data);
+      }
+      setLoading(false);
+    };
+    fetchInvoices();
+  }, [user]);
+
+  if (!user) return null;
+
+  return (
+    <div className="mt-12 space-y-4">
+      <h2 className="text-lg font-semibold tracking-tight">Recent Invoices</h2>
+      <Panel className="overflow-hidden min-w-0">
+        {loading ? (
+          <div className="p-6 text-center text-sm text-muted-foreground">Loading invoices...</div>
+        ) : invoices.length === 0 ? (
+          <div className="p-6 text-center text-sm text-muted-foreground">
+            No recent invoices found.
+          </div>
+        ) : (
+          <div className="divide-y divide-hairline overflow-x-auto">
+            <div className="grid min-w-[500px] grid-cols-4 bg-surface/70 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              <div>Invoice</div>
+              <div>Client</div>
+              <div>Issue Date</div>
+              <div className="text-right">Status</div>
+            </div>
+            {invoices.map((inv) => (
+              <div
+                key={inv.id}
+                className="grid min-w-[500px] grid-cols-4 items-center px-6 py-4 text-[13px] hover:bg-surface/50 transition"
+              >
+                <div className="font-medium">{inv.invoice_number}</div>
+                <div className="text-muted-foreground truncate pr-4">{inv.client_name || "—"}</div>
+                <div className="text-muted-foreground">{formatDateLabel(inv.issue_date)}</div>
+                <div className="text-right">
+                  <PaymentStatusPill status={inv.payment_status || "Pending"} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+    </div>
   );
 }
 
@@ -365,16 +788,20 @@ function Field({
   onChange,
   type = "text",
   placeholder,
+  optional,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   placeholder: string;
+  optional?: boolean;
 }) {
   return (
-    <div>
-      <label className="text-[12px] text-muted-foreground">{label}</label>
+    <div className="min-w-0">
+      <label className="text-[12px] text-muted-foreground">
+        {label} {optional && <span className="text-muted-foreground/60">(optional)</span>}
+      </label>
       <input
         type={type}
         value={value}
@@ -386,6 +813,38 @@ function Field({
   );
 }
 
+function DateField({
+  label,
+  value,
+  onChange,
+  optional,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  optional?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <label className="text-[12px] text-muted-foreground">
+        {label} {optional && <span className="text-muted-foreground/60">(optional)</span>}
+      </label>
+      <div className="relative mt-1.5">
+        <input
+          type="date"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="peer absolute inset-0 z-10 h-11 w-full cursor-pointer opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0"
+        />
+        <div className="pointer-events-none flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-hairline bg-white px-3 text-[14px] transition peer-focus:border-foreground/20">
+          <span className="truncate">{formatDateLabel(value)}</span>
+          <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InputField({
   value,
   onChange,
@@ -393,6 +852,7 @@ function InputField({
   placeholder,
   min,
   step,
+  inputMode,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -400,6 +860,7 @@ function InputField({
   placeholder: string;
   min?: number;
   step?: string;
+  inputMode?: "numeric" | "decimal" | "text";
 }) {
   return (
     <input
@@ -408,23 +869,60 @@ function InputField({
       type={type}
       min={min}
       step={step}
+      inputMode={inputMode}
       placeholder={placeholder}
-      className="h-11 rounded-2xl border border-hairline bg-white px-3 text-[14px] outline-none transition placeholder:text-muted-foreground/60 focus:border-foreground/20"
+      className="h-11 w-full min-w-0 rounded-2xl border border-hairline bg-white px-3 text-[14px] outline-none transition placeholder:text-muted-foreground/60 focus:border-foreground/20"
     />
   );
 }
 
-function Row({ label, value, emphasized }: { label: string; value: string; emphasized?: boolean }) {
+function CurrencyField({
+  currency,
+  value,
+  onChange,
+  wrapperClassName,
+}: {
+  currency: CurrencyCode;
+  value: number;
+  onChange: (value: number) => void;
+  wrapperClassName?: string;
+}) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-surface/70 px-4 py-3">
-      <span className={emphasized ? "font-medium text-foreground" : "text-muted-foreground"}>
-        {label}
-      </span>
-      <span
-        className={emphasized ? "text-lg font-semibold tabular-nums" : "font-medium tabular-nums"}
-      >
-        {value}
-      </span>
+    <div
+      className={cn(
+        "flex h-11 min-w-0 items-center rounded-2xl border border-hairline bg-white pl-3 pr-2 transition focus-within:border-foreground/20",
+        wrapperClassName,
+      )}
+    >
+      <span className="text-[12px] font-medium text-muted-foreground">{currency}</span>
+      <input
+        type="number"
+        min={0}
+        step="0.01"
+        value={value || ""}
+        onChange={(event) => onChange(Number(event.target.value) || 0)}
+        placeholder="0.00"
+        className="h-full w-full min-w-0 bg-transparent px-2 text-right text-[14px] outline-none placeholder:text-muted-foreground/60"
+      />
     </div>
+  );
+}
+
+function PaymentStatusPill({ status }: { status: PaymentStatus }) {
+  const classes: Record<PaymentStatus, string> = {
+    Paid: "bg-foreground text-background",
+    Pending: "bg-secondary text-foreground",
+    Overdue: "bg-destructive/10 text-destructive",
+  };
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium",
+        classes[status],
+      )}
+    >
+      {status}
+    </span>
   );
 }

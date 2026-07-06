@@ -15,7 +15,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased relative overflow-hidden">
       <div className="absolute inset-0 grid-bg pointer-events-none opacity-60" />
-      <main className="relative mx-auto flex min-h-screen w-full max-w-[480px] items-center px-4 py-10 sm:px-6">
+      <main className="relative mx-auto flex min-h-screen w-full max-w-[440px] items-center px-4 py-10 sm:px-6">
         <section className="w-full animate-fade-up">
           <div className="mb-8 text-center">
             <Link to="/" className="inline-flex items-center justify-center" aria-label={brandName}>

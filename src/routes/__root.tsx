@@ -10,8 +10,10 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { faviconUrl, brandName, slogan } from "@/lib/envoiz";
+import { brandName, faviconUrl, logoUrl, slogan } from "@/lib/envoiz";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -87,6 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "preload", href: logoUrl, as: "image" },
       { rel: "preload", href: faviconUrl, as: "image" },
       { rel: "icon", href: faviconUrl },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -122,8 +125,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AuthProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <Toaster position="top-right" richColors closeButton />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

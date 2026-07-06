@@ -154,7 +154,7 @@ function Hero() {
               <Check className="h-3.5 w-3.5" /> No credit card
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5" /> 100 invoices free
+              <Check className="h-3.5 w-3.5" /> 50 invoices free
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Check className="h-3.5 w-3.5" /> Cancel anytime
@@ -734,8 +734,8 @@ function Pricing() {
         </div>
 
         <p className="mt-10 text-center text-[12.5px] text-muted-foreground">
-          All plans include unlimited customers, PDF generation, and direct printing. Need something
-          custom?{" "}
+          All plans include unlimited customers, PDF generation, and direct printing. The free plan
+          includes up to 50 invoices per month. Need something custom?{" "}
           <a href="#contact" className="underline underline-offset-4 text-foreground">
             Talk to sales
           </a>
