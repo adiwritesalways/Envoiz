@@ -97,7 +97,7 @@ export async function createInvoice(userId: string, draft: InvoiceDraft) {
   };
 
   const { data, error } = await supabase
-    .from("Invoices")
+    .from("envoiz_invoices")
     .insert(payload)
     .select("id, user_id, client_name, client_email, items, total, created_at, status")
     .single();
@@ -111,7 +111,7 @@ export async function createInvoice(userId: string, draft: InvoiceDraft) {
 
 export async function updateInvoice(invoiceId: string, userId: string, draft: InvoiceDraft) {
   const { data, error } = await supabase
-    .from("Invoices")
+    .from("envoiz_invoices")
     .update({
       client_name: draft.clientName,
       client_email: draft.clientEmail,
@@ -133,7 +133,7 @@ export async function updateInvoice(invoiceId: string, userId: string, draft: In
 
 export async function deleteInvoice(invoiceId: string, userId: string) {
   const { error } = await supabase
-    .from("Invoices")
+    .from("envoiz_invoices")
     .delete()
     .eq("id", invoiceId)
     .eq("user_id", userId);

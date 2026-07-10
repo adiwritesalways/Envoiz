@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarDays, ChevronDown, Plus, Trash2, ArrowRight } from "lucide-react";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas-pro";
 import { pdf } from '@react-pdf/renderer';
@@ -100,7 +100,7 @@ function InvoicesPage() {
   const [wasUpdate, setWasUpdate] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
 
-  const today = useMemo(() => new Date(2026, 5, 27), []);
+  const today = useMemo(() => new Date(), []);
   const defaultDueDate = useMemo(() => {
     const date = new Date(today);
     date.setDate(date.getDate() + 14);
@@ -132,6 +132,24 @@ function InvoicesPage() {
     );
   }, [user?.id]);
 
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+
+  // Load the next sequential invoice number for new invoices
+  const loadNextInvoiceNumber = useCallback(async () => {
+    if (!user?.id) return;
+    const { count } = await supabase
+      .from("envoiz_invoices")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id);
+    setInvoiceNumber(formatInvoiceNumber((count ?? 0) + 1));
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!editingInvoiceId) {
+      loadNextInvoiceNumber();
+    }
+  }, [user?.id, editingInvoiceId, loadNextInvoiceNumber]);
+
   const subtotal = useMemo(
     () =>
       items.reduce(
@@ -143,8 +161,6 @@ function InvoicesPage() {
 
   const safeDiscount = Math.min(Math.max(0, discount), subtotal);
   const grandTotal = Math.max(0, subtotal - safeDiscount);
-
-  const invoiceNumber = formatInvoiceNumber(1);
 
   const handleDelete = async () => {
     if (!editingInvoiceId) return;
@@ -390,6 +406,7 @@ function InvoicesPage() {
 
   const handleSelectInvoice = async (inv: any) => {
     setEditingInvoiceId(inv.id);
+    setInvoiceNumber(inv.invoice_number || "");
     setClientName(inv.client_name || "");
     setClientEmail(inv.client_email || "");
     setBillingAddress(inv.billing_address || "");
