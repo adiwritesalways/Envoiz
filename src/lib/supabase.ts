@@ -1,18 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
-import { createRequire } from "module";
 
 // Node.js 20 (Replit's runtime) lacks native WebSocket.
-// TanStack Start evaluates this module on the server during SSR, so we
-// polyfill globalThis.WebSocket with the "ws" package before the Supabase
-// Realtime client is initialised (it checks for WebSocket in its constructor).
-if (typeof WebSocket === "undefined") {
-  try {
-    const require = createRequire(import.meta.url);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (globalThis as any).WebSocket = require("ws");
-  } catch {
-    // ws package not installed; realtime subscriptions will not work server-side
-  }
+// This block only runs during SSR — import.meta.env.SSR is replaced with
+// `false` at build time for browser bundles, dead-code eliminating the ws import.
+if (import.meta.env.SSR && typeof WebSocket === "undefined") {
+  const { default: ws } = await import("ws");
+  (globalThis as any).WebSocket = ws; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export const supabase = createClient(
