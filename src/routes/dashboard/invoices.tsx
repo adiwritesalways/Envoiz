@@ -137,11 +137,17 @@ function InvoicesPage() {
   // Load the next sequential invoice number for new invoices
   const loadNextInvoiceNumber = useCallback(async () => {
     if (!user?.id) return;
-    const { count } = await supabase
-      .from("envoiz_invoices")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id);
-    setInvoiceNumber(formatInvoiceNumber((count ?? 0) + 1));
+    try {
+      const { count, error } = await supabase
+        .from("envoiz_invoices")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setInvoiceNumber(formatInvoiceNumber((count ?? 0) + 1));
+    } catch {
+      // Fallback: use a timestamp-based placeholder so the form is never blank
+      setInvoiceNumber(formatInvoiceNumber(Date.now() % 1000000));
+    }
   }, [user?.id]);
 
   useEffect(() => {
