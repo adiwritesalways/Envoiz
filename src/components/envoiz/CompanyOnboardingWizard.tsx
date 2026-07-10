@@ -32,11 +32,12 @@ export function CompanyOnboardingWizard() {
 
     const savedCompanyName = readUserStorageValue(user.id, settingsStorageKeys.companyName, "");
     const savedCompanyAddress = readUserStorageValue(user.id, settingsStorageKeys.companyAddress, "");
-    const onboardingComplete = readUserStorageValue(
-      user.id,
-      settingsStorageKeys.onboardingComplete,
-      "",
-    );
+
+    // Check Supabase user metadata first — this persists across browsers and devices.
+    // Fall back to localStorage for users who completed onboarding before this was added.
+    const metadataComplete = user.user_metadata?.onboarding_complete === true;
+    const localComplete = !!readUserStorageValue(user.id, settingsStorageKeys.onboardingComplete, "");
+    const onboardingComplete = metadataComplete || localComplete;
 
     setCompanyName(savedCompanyName);
     setCompanyAddress(savedCompanyAddress);
@@ -94,7 +95,12 @@ export function CompanyOnboardingWizard() {
         settingsStorageKeys.companyAddress,
         companyAddress.trim() || DEFAULT_COMPANY_ADDRESS,
       );
+      // Persist to localStorage (same-browser fallback)
       writeUserStorageValue(user.id, settingsStorageKeys.onboardingComplete, "true");
+      // Persist to Supabase user metadata so the wizard never re-appears on any
+      // browser or device for this account.
+      await supabase.auth.updateUser({ data: { onboarding_complete: true } });
+      await refreshSession();
       toast.success("Workspace setup saved.");
       setOpen(false);
     } catch (error) {
