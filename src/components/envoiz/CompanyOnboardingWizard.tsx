@@ -95,11 +95,11 @@ export function CompanyOnboardingWizard() {
         settingsStorageKeys.companyAddress,
         companyAddress.trim() || DEFAULT_COMPANY_ADDRESS,
       );
-      // Persist to localStorage (same-browser fallback)
+      // Persist to Supabase user metadata first — this is the cross-device source of truth.
+      // Only write to localStorage after metadata succeeds, so both stores stay in sync.
+      const { error: metaError } = await supabase.auth.updateUser({ data: { onboarding_complete: true } });
+      if (metaError) throw metaError;
       writeUserStorageValue(user.id, settingsStorageKeys.onboardingComplete, "true");
-      // Persist to Supabase user metadata so the wizard never re-appears on any
-      // browser or device for this account.
-      await supabase.auth.updateUser({ data: { onboarding_complete: true } });
       await refreshSession();
       toast.success("Workspace setup saved.");
       setOpen(false);
