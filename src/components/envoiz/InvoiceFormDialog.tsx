@@ -2,9 +2,12 @@ import * as React from "react";
 import { ChevronDown, Plus, Trash2, X, ArrowRight, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { toPng, toJpeg, toCanvas } from "html-to-image";
-import jsPDF from "jspdf";
+// jsPDF types or module may not be available in all environments; ignore if missing
+// @ts-ignore: Could not find module 'jspdf' or its type declarations
+import { jsPDF } from "jspdf";
 import { useAuth } from "@/components/auth/auth-context";
 import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogClose, DialogTrigger } from "@/components/ui/dialog";
@@ -21,7 +24,7 @@ import {
   currencyOptions,
   defaultCurrency,
   formatInvoiceNumber,
-  readStorageValue,
+  readUserStorageValue,
   settingsStorageKeys,
   type CurrencyCode,
 } from "@/lib/envoiz";
@@ -64,6 +67,7 @@ export function InvoiceFormDialog({
   defaultOpen?: boolean;
 }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = React.useState(false);
   const [showSuccess, setShowSuccess] = React.useState(false);
   const [savedInvoiceNumber, setSavedInvoiceNumber] = React.useState("");
@@ -95,13 +99,13 @@ export function InvoiceFormDialog({
 
   React.useEffect(() => {
     setCurrency(
-      readStorageValue(settingsStorageKeys.defaultCurrency, defaultCurrency) as CurrencyCode,
+      readUserStorageValue(user?.id, settingsStorageKeys.defaultCurrency, defaultCurrency) as CurrencyCode,
     );
-    setCompanyName(readStorageValue(settingsStorageKeys.companyName, "Envoiz Studio"));
+    setCompanyName(readUserStorageValue(user?.id, settingsStorageKeys.companyName, "Envoiz Studio"));
     setCompanyAddress(
-      readStorageValue(settingsStorageKeys.companyAddress, "Dhanmondi, Dhaka, Bangladesh"),
+      readUserStorageValue(user?.id, settingsStorageKeys.companyAddress, "Dhanmondi, Dhaka, Bangladesh"),
     );
-  }, []);
+  }, [user?.id]);
 
   const subtotal = React.useMemo(
     () =>
@@ -173,6 +177,8 @@ export function InvoiceFormDialog({
 
         if (itemsError) throw itemsError;
       }
+
+      await queryClient.invalidateQueries({ queryKey: ["invoices"] });
 
       toast.success(`Invoice saved successfully as ${invoiceNumber}.`);
       setSavedInvoiceNumber(invoiceNumber);
@@ -786,9 +792,9 @@ function CurrencyField({
 
 function PaymentStatusPill({ status }: { status: PaymentStatus }) {
   const classes: Record<PaymentStatus, string> = {
-    Paid: "bg-foreground text-background",
-    Pending: "bg-secondary text-foreground",
-    Overdue: "bg-destructive/10 text-destructive",
+    Paid: "bg-[#dcfce7] text-[#15803d]",
+    Pending: "bg-[#f1f1f1] text-[#525252]",
+    Overdue: "bg-[#fee2e2] text-[#b91c1c]",
   };
 
   return (

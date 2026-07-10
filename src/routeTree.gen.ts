@@ -9,10 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SecurityRouteImport } from './routes/security'
+import { Route as ResourcesRouteImport } from './routes/resources'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as ResourcesSupportRouteImport } from './routes/resources/support'
+import { Route as ResourcesStatusRouteImport } from './routes/resources/status'
+import { Route as ResourcesDocsRouteImport } from './routes/resources/docs'
+import { Route as ResourcesBlogRouteImport } from './routes/resources/blog'
 import { Route as DashboardWebhooksRouteImport } from './routes/dashboard/webhooks'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardInvoicesRouteImport } from './routes/dashboard/invoices'
@@ -20,14 +29,39 @@ import { Route as DashboardCustomersRouteImport } from './routes/dashboard/custo
 import { Route as DashboardApiRouteImport } from './routes/dashboard/api'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesRoute = ResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -39,6 +73,26 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesSupportRoute = ResourcesSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const ResourcesStatusRoute = ResourcesStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const ResourcesDocsRoute = ResourcesDocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const ResourcesBlogRoute = ResourcesBlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => ResourcesRoute,
 } as any)
 const DashboardWebhooksRoute = DashboardWebhooksRouteImport.update({
   id: '/dashboard/webhooks',
@@ -73,82 +127,141 @@ const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/resources': typeof ResourcesRouteWithChildren
+  '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/dashboard': typeof DashboardLayoutRoute
   '/dashboard/api': typeof DashboardApiRoute
   '/dashboard/customers': typeof DashboardCustomersRoute
   '/dashboard/invoices': typeof DashboardInvoicesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/webhooks': typeof DashboardWebhooksRoute
+  '/resources/blog': typeof ResourcesBlogRoute
+  '/resources/docs': typeof ResourcesDocsRoute
+  '/resources/status': typeof ResourcesStatusRoute
+  '/resources/support': typeof ResourcesSupportRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/resources': typeof ResourcesRouteWithChildren
+  '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/api': typeof DashboardApiRoute
   '/dashboard/customers': typeof DashboardCustomersRoute
   '/dashboard/invoices': typeof DashboardInvoicesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/webhooks': typeof DashboardWebhooksRoute
+  '/resources/blog': typeof ResourcesBlogRoute
+  '/resources/docs': typeof ResourcesDocsRoute
+  '/resources/status': typeof ResourcesStatusRoute
+  '/resources/support': typeof ResourcesSupportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/resources': typeof ResourcesRouteWithChildren
+  '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/dashboard/_layout': typeof DashboardLayoutRoute
   '/dashboard/api': typeof DashboardApiRoute
   '/dashboard/customers': typeof DashboardCustomersRoute
   '/dashboard/invoices': typeof DashboardInvoicesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/webhooks': typeof DashboardWebhooksRoute
+  '/resources/blog': typeof ResourcesBlogRoute
+  '/resources/docs': typeof ResourcesDocsRoute
+  '/resources/status': typeof ResourcesStatusRoute
+  '/resources/support': typeof ResourcesSupportRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/login'
+    | '/privacy-policy'
+    | '/resources'
+    | '/security'
     | '/signup'
+    | '/terms'
     | '/dashboard'
     | '/dashboard/api'
     | '/dashboard/customers'
     | '/dashboard/invoices'
     | '/dashboard/settings'
     | '/dashboard/webhooks'
+    | '/resources/blog'
+    | '/resources/docs'
+    | '/resources/status'
+    | '/resources/support'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/login'
+    | '/privacy-policy'
+    | '/resources'
+    | '/security'
     | '/signup'
+    | '/terms'
     | '/dashboard'
     | '/dashboard/api'
     | '/dashboard/customers'
     | '/dashboard/invoices'
     | '/dashboard/settings'
     | '/dashboard/webhooks'
+    | '/resources/blog'
+    | '/resources/docs'
+    | '/resources/status'
+    | '/resources/support'
   id:
     | '__root__'
     | '/'
+    | '/about'
     | '/login'
+    | '/privacy-policy'
+    | '/resources'
+    | '/security'
     | '/signup'
+    | '/terms'
     | '/dashboard/_layout'
     | '/dashboard/api'
     | '/dashboard/customers'
     | '/dashboard/invoices'
     | '/dashboard/settings'
     | '/dashboard/webhooks'
+    | '/resources/blog'
+    | '/resources/docs'
+    | '/resources/status'
+    | '/resources/support'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   LoginRoute: typeof LoginRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  ResourcesRoute: typeof ResourcesRouteWithChildren
+  SecurityRoute: typeof SecurityRoute
   SignupRoute: typeof SignupRoute
+  TermsRoute: typeof TermsRoute
   DashboardLayoutRoute: typeof DashboardLayoutRoute
   DashboardApiRoute: typeof DashboardApiRoute
   DashboardCustomersRoute: typeof DashboardCustomersRoute
@@ -160,6 +273,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -167,11 +287,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -187,6 +335,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/resources/support': {
+      id: '/resources/support'
+      path: '/support'
+      fullPath: '/resources/support'
+      preLoaderRoute: typeof ResourcesSupportRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/resources/status': {
+      id: '/resources/status'
+      path: '/status'
+      fullPath: '/resources/status'
+      preLoaderRoute: typeof ResourcesStatusRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/resources/docs': {
+      id: '/resources/docs'
+      path: '/docs'
+      fullPath: '/resources/docs'
+      preLoaderRoute: typeof ResourcesDocsRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/resources/blog': {
+      id: '/resources/blog'
+      path: '/blog'
+      fullPath: '/resources/blog'
+      preLoaderRoute: typeof ResourcesBlogRouteImport
+      parentRoute: typeof ResourcesRoute
     }
     '/dashboard/webhooks': {
       id: '/dashboard/webhooks'
@@ -233,10 +409,33 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ResourcesRouteChildren {
+  ResourcesBlogRoute: typeof ResourcesBlogRoute
+  ResourcesDocsRoute: typeof ResourcesDocsRoute
+  ResourcesStatusRoute: typeof ResourcesStatusRoute
+  ResourcesSupportRoute: typeof ResourcesSupportRoute
+}
+
+const ResourcesRouteChildren: ResourcesRouteChildren = {
+  ResourcesBlogRoute: ResourcesBlogRoute,
+  ResourcesDocsRoute: ResourcesDocsRoute,
+  ResourcesStatusRoute: ResourcesStatusRoute,
+  ResourcesSupportRoute: ResourcesSupportRoute,
+}
+
+const ResourcesRouteWithChildren = ResourcesRoute._addFileChildren(
+  ResourcesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   LoginRoute: LoginRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
+  ResourcesRoute: ResourcesRouteWithChildren,
+  SecurityRoute: SecurityRoute,
   SignupRoute: SignupRoute,
+  TermsRoute: TermsRoute,
   DashboardLayoutRoute: DashboardLayoutRoute,
   DashboardApiRoute: DashboardApiRoute,
   DashboardCustomersRoute: DashboardCustomersRoute,

@@ -1,5 +1,6 @@
 import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   Area,
   AreaChart,
@@ -13,11 +14,12 @@ import {
 import { ArrowDownRight, ArrowUpRight, Calendar, ChevronDown, Download, Plus } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-context";
 import { DashboardShell } from "@/components/envoiz/DashboardShell";
-import { InvoiceFormDialog } from "@/components/envoiz/InvoiceFormDialog";
 import { Button } from "@/components/ui/button";
 import { RecentInvoicesList } from "@/components/envoiz/RecentInvoicesList";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { fetchInvoices } from "@/lib/invoices";
+import { readUserStorageValue, settingsStorageKeys } from "@/lib/envoiz";
 
 export const Route = createFileRoute("/dashboard/")({
   head: () => ({
@@ -32,38 +34,55 @@ export const Route = createFileRoute("/dashboard/")({
   component: DashboardOverview,
 });
 
-const revenueData = [
-  { m: "Jan", current: 12400, previous: 9800 },
-  { m: "Feb", current: 14800, previous: 11200 },
-  { m: "Mar", current: 13200, previous: 12500 },
-  { m: "Apr", current: 17600, previous: 14100 },
-  { m: "May", current: 21400, previous: 15800 },
-  { m: "Jun", current: 19800, previous: 17200 },
-  { m: "Jul", current: 24600, previous: 18900 },
-  { m: "Aug", current: 28100, previous: 21300 },
-  { m: "Sep", current: 26500, previous: 22800 },
-  { m: "Oct", current: 31200, previous: 24100 },
-  { m: "Nov", current: 34800, previous: 25600 },
-  { m: "Dec", current: 38900, previous: 27400 },
-];
-
-const metrics = [
-  { label: "Total revenue", value: "$284,520", delta: 12.4, up: true },
-  { label: "Invoices sent", value: "1,284", delta: 8.1, up: true },
-  { label: "Paid", value: "$219,840", delta: 4.2, up: true },
-  { label: "Outstanding", value: "$64,680", delta: 2.3, up: false },
-];
-
-const recent = [
-  { id: "INV-2026-0184", client: "Northwind Studios", amount: 4800, status: "Paid" },
-  { id: "INV-2026-0183", client: "Patagonia Labs", amount: 1240, status: "Pending" },
-  { id: "INV-2026-0182", client: "Helios Robotics", amount: 9600, status: "Paid" },
-  { id: "INV-2026-0181", client: "Mercer & Co.", amount: 2150, status: "Overdue" },
-  { id: "INV-2026-0180", client: "Atlas Foundry", amount: 720, status: "Draft" },
-];
+function generateRevenueData(invoices: any[]) {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const currentYear = new Date().getFullYear();
+  
+  const data = months.map(m => ({ m, current: 0, previous: 0 }));
+  
+  invoices.forEach(inv => {
+    if (inv.status !== "Paid") return;
+    const date = new Date(inv.createdAt);
+    if (date.getFullYear() === currentYear) {
+      const monthIndex = date.getMonth();
+      data[monthIndex].current += inv.total;
+    } else if (date.getFullYear() === currentYear - 1) {
+      const monthIndex = date.getMonth();
+      data[monthIndex].previous += inv.total;
+    }
+  });
+  
+  return data;
+}
 
 function DashboardOverview() {
   const { user } = useAuth();
+  
+  const [companyName, setCompanyName] = React.useState("your business");
+
+  React.useEffect(() => {
+    setCompanyName(readUserStorageValue(user?.id, settingsStorageKeys.companyName, "your business"));
+  }, [user?.id]);
+  
+  const invoicesQuery = useQuery({
+    queryKey: ["invoices", user?.id],
+    queryFn: () => fetchInvoices(user?.id ?? ""),
+    enabled: Boolean(user?.id),
+  });
+
+  const invoices = invoicesQuery.data ?? [];
+  const revenueData = React.useMemo(() => generateRevenueData(invoices), [invoices]);
+  
+  const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.status === "Paid" ? inv.total : 0), 0);
+  const totalOutstanding = invoices.reduce((sum, inv) => sum + (inv.status === "Pending" ? inv.total : 0), 0);
+  const uniqueClients = new Set(invoices.map((inv: any) => inv.clientEmail)).size;
+  
+  const dynamicMetrics = [
+    { label: "Total revenue", value: `$${totalRevenue.toLocaleString()}` },
+    { label: "Pending", value: `$${totalOutstanding.toLocaleString()}` },
+    { label: "Invoices", value: invoices.length.toLocaleString() },
+    { label: "Clients", value: uniqueClients.toLocaleString() },
+  ];
 
   return (
     <DashboardShell>
@@ -75,7 +94,7 @@ function DashboardOverview() {
               Good morning
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-              Here's how Envoiz is doing today.
+              Here's how {companyName} is doing today.
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -86,92 +105,50 @@ function DashboardOverview() {
             <Button variant="outline" size="sm">
               <Download className="h-3.5 w-3.5" /> Export
             </Button>
-            <InvoiceFormDialog
-              trigger={
-                <Button size="sm">
-                  <Plus className="h-3.5 w-3.5" /> Create invoice
-                </Button>
-              }
-            />
+            <Button asChild size="sm">
+              <Link to="/dashboard/invoices">
+                <Plus className="h-3.5 w-3.5" /> Create invoice
+              </Link>
+            </Button>
           </div>
         </header>
 
         {/* Metric cards */}
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {metrics.map((m) => (
-            <Card key={m.label} className="border-border bg-card p-5 shadow-none">
+          {dynamicMetrics.map((m) => (
+            <Card key={m.label} className="border-border bg-card p-5 shadow-none flex flex-col justify-between">
               <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                 {m.label}
               </div>
-              <div className="mt-2 flex items-end justify-between gap-2">
-                <div className="font-mono text-2xl font-semibold tabular-nums tracking-tight">
-                  {m.value}
-                </div>
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-0.5 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium",
-                    m.up ? "text-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {m.up ? (
-                    <ArrowUpRight className="h-3 w-3" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3" />
-                  )}
-                  {m.delta}%
-                </span>
+              <div className="mt-2 font-mono text-2xl font-semibold tabular-nums tracking-tight">
+                {m.value}
               </div>
             </Card>
           ))}
         </section>
 
         {/* Chart */}
-        <RevenueChart />
+        <RevenueChart revenueData={revenueData} />
 
         {/* Bottom row */}
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <section className="grid grid-cols-1 gap-4">
           <RecentInvoicesList
             user={user}
             title="Recent invoices"
             description="The latest invoices across all customers."
             viewAllHref="/dashboard/invoices"
           />
-
-          <Card className="border-border bg-card p-5 shadow-none">
-            <h3 className="text-sm font-semibold tracking-tight">Top customers</h3>
-            <p className="text-xs text-muted-foreground">By revenue this year</p>
-            <div className="mt-4 space-y-3">
-              {[
-                { name: "Helios Robotics", amount: 48200 },
-                { name: "Northwind Studios", amount: 39400 },
-                { name: "Patagonia Labs", amount: 22150 },
-                { name: "Mercer & Co.", amount: 18900 },
-              ].map((c) => (
-                <div key={c.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>{c.name}</span>
-                    <span className="font-mono tabular-nums">${c.amount.toLocaleString()}</span>
-                  </div>
-                  <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full bg-foreground"
-                      style={{ width: `${(c.amount / 48200) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
         </section>
       </div>
     </DashboardShell>
   );
 }
 
-function RevenueChart() {
+function RevenueChart({ revenueData }: { revenueData: any[] }) {
   const [range, setRange] = React.useState<"3M" | "6M" | "12M" | "YTD">("12M");
 
   const total = revenueData.reduce((a, b) => a + b.current, 0);
+  const totalPrevious = revenueData.reduce((a, b) => a + b.previous, 0);
 
   return (
     <Card className="border-border bg-card p-5 shadow-none">
@@ -184,14 +161,18 @@ function RevenueChart() {
             <div className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
               ${total.toLocaleString()}
             </div>
-            <span className="inline-flex items-center gap-0.5 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium">
-              <ArrowUpRight className="h-3 w-3" /> 18.2%
-            </span>
+            {totalPrevious > 0 && (
+              <span className="inline-flex items-center gap-0.5 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium">
+                {total >= totalPrevious ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {(((total - totalPrevious) / totalPrevious) * 100).toFixed(1)}%
+              </span>
+            )}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Compared to ${revenueData.reduce((a, b) => a + b.previous, 0).toLocaleString()} previous
-            period
-          </p>
+          {totalPrevious > 0 && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Compared to ${totalPrevious.toLocaleString()} previous period
+            </p>
+          )}
         </div>
 
         <div className="inline-flex items-center rounded-md border border-border p-0.5">
@@ -266,7 +247,7 @@ function RevenueChart() {
                 fill: "var(--color-foreground)",
               }}
             />
-            <Line type="monotone" dataKey="current" stroke="transparent" dot={false} />
+            <Line type="monotone" dataKey="current" stroke="var(--color-foreground)" dot={false} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -307,20 +288,5 @@ function ChartTooltip({
         <span className="font-mono tabular-nums">${previous.toLocaleString()}</span>
       </div>
     </div>
-  );
-}
-
-function StatusPill({ status }: { status: string }) {
-  const dot =
-    status === "Paid"
-      ? "bg-foreground"
-      : status === "Overdue"
-        ? "bg-foreground"
-        : "bg-muted-foreground";
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider">
-      <span className={cn("h-1.5 w-1.5 rounded-full", dot)} />
-      {status}
-    </span>
   );
 }

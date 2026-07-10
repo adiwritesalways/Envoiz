@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PaymentStatusPill } from "@/components/envoiz/DashboardUI";
 import { ArrowRight, ChevronRight, FileStack, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 type RecentInvoiceRow = {
   id: string;
@@ -31,28 +31,19 @@ export function RecentInvoicesList({
   description = "Your most recently saved invoices.",
   viewAllHref,
 }: RecentInvoicesListProps) {
-  const [invoices, setInvoices] = useState<RecentInvoiceRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    const fetchInvoices = async () => {
-      setLoading(true);
+  const { data: invoices = [], isLoading: loading } = useQuery({
+    queryKey: ["recentInvoices", user?.id],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("envoiz_invoices")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(10);
-
-      if (error) {
-        console.error("Error fetching recent invoices:", error);
-      } else if (data) {
-        setInvoices(data);
-      }
-      setLoading(false);
-    };
-    fetchInvoices();
-  }, [user]);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: Boolean(user?.id),
+  });
 
   const formatDateLabel = (value: string | null | undefined) => {
     if (!value) return "—";

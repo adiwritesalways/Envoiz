@@ -1,18 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ExternalLink, ShieldCheck } from "lucide-react";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { ExternalLink, ShieldCheck, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-context";
 import { DashboardPage, Panel } from "@/components/envoiz/DashboardUI";
+import { supabase } from "@/lib/supabase";
 import {
+
   brandName,
   currencyOptions,
   defaultCurrency,
-  readStorageValue,
+  readUserStorageValue,
   settingsStorageKeys,
   type CurrencyCode,
-  writeStorageValue,
+  writeUserStorageValue,
 } from "@/lib/envoiz";
 
 export const Route = createFileRoute("/dashboard/settings")({
@@ -30,24 +32,30 @@ export const Route = createFileRoute("/dashboard/settings")({
 
 function SettingsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [companyName, setCompanyName] = useState("Envoiz Studio");
   const [companyAddress, setCompanyAddress] = useState("Dhanmondi, Dhaka, Bangladesh");
   const [defaultCurrencyValue, setDefaultCurrencyValue] = useState<CurrencyCode>(defaultCurrency);
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.navigate({ to: "/login" });
+  };
+
   useEffect(() => {
-    setCompanyName(readStorageValue(settingsStorageKeys.companyName, "Envoiz Studio"));
+    setCompanyName(readUserStorageValue(user?.id, settingsStorageKeys.companyName, "Envoiz Studio"));
     setCompanyAddress(
-      readStorageValue(settingsStorageKeys.companyAddress, "Dhanmondi, Dhaka, Bangladesh"),
+      readUserStorageValue(user?.id, settingsStorageKeys.companyAddress, "Dhanmondi, Dhaka, Bangladesh"),
     );
     setDefaultCurrencyValue(
-      readStorageValue(settingsStorageKeys.defaultCurrency, defaultCurrency) as CurrencyCode,
+      readUserStorageValue(user?.id, settingsStorageKeys.defaultCurrency, defaultCurrency) as CurrencyCode,
     );
-  }, []);
+  }, [user?.id]);
 
   const savePreferences = () => {
-    writeStorageValue(settingsStorageKeys.companyName, companyName);
-    writeStorageValue(settingsStorageKeys.companyAddress, companyAddress);
-    writeStorageValue(settingsStorageKeys.defaultCurrency, defaultCurrencyValue);
+    writeUserStorageValue(user?.id, settingsStorageKeys.companyName, companyName);
+    writeUserStorageValue(user?.id, settingsStorageKeys.companyAddress, companyAddress);
+    writeUserStorageValue(user?.id, settingsStorageKeys.defaultCurrency, defaultCurrencyValue);
     toast.success("Preferences saved successfully.");
   };
 
@@ -75,6 +83,14 @@ function SettingsPage() {
             <p className="mt-2 leading-relaxed">
               This email comes from your Supabase auth session and stays read-only here.
             </p>
+          </div>
+          <div className="mt-6">
+            <button
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-2 rounded-xl bg-destructive/10 px-4 py-2.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/20"
+            >
+              <LogOut className="h-4 w-4" /> Sign Out
+            </button>
           </div>
         </Panel>
 

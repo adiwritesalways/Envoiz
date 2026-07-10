@@ -1,8 +1,13 @@
+import { envoizLpLogoDataUri } from "./envoiz-logo-data";
+
 export const brandName = "Envoiz";
 export const slogan = "Smart Invoicing for Freelancers and Businesses";
 
-export const faviconUrl = new URL("../../Envoiz site icon.png", import.meta.url).href;
-export const logoUrl = new URL("../../Envoiz lp icon.png", import.meta.url).href;
+export const faviconUrl = new URL("../../envoiz-site-favicon-512.png", import.meta.url).href;
+
+// Inline the horizontal logo so the landing page can render it immediately
+// without waiting on an extra image request.
+export const logoUrl = envoizLpLogoDataUri;
 
 export const currencyOptions = [
   { code: "USD", label: "US Dollar" },
@@ -81,6 +86,7 @@ export const settingsStorageKeys = {
   companyAddress: "envoiz_company_address",
   email: "envoiz_profile_email",
   defaultCurrency: "envoiz_default_currency",
+  onboardingComplete: "envoiz_onboarding_complete",
 } as const;
 
 export function readStorageValue(key: string, fallback: string) {
@@ -93,41 +99,16 @@ export function writeStorageValue(key: string, value: string) {
   window.localStorage.setItem(key, value);
 }
 
-/**
- * html2canvas can't parse modern CSS color functions (oklch(), color-mix()),
- * which this app's theme relies on for every border/background color via
- * `* { border-color: var(--color-border) }` and similar rules. Without this
- * fallback, html2canvas throws while reading computed styles and the invoice
- * capture fails silently. Pass this as the `onclone` option to html2canvas to
- * swap in plain rgb/hex equivalents inside the cloned document just for the
- * capture, preserving the same look.
- */
-export function applyExportColorFallbacks(clonedDoc: Document) {
-  const style = clonedDoc.createElement("style");
-  style.textContent = `
-    :root {
-      --background: #ffffff;
-      --surface: #f9f9f9;
-      --foreground: #000000;
-      --card: #ffffff;
-      --card-foreground: #000000;
-      --popover: #ffffff;
-      --popover-foreground: #000000;
-      --primary: #000000;
-      --primary-foreground: #ffffff;
-      --secondary: #f5f5f5;
-      --secondary-foreground: #000000;
-      --muted: #f5f5f5;
-      --muted-foreground: #737373;
-      --accent: #f5f5f5;
-      --accent-foreground: #000000;
-      --destructive: #dc2626;
-      --destructive-foreground: #ffffff;
-      --border: rgba(0, 0, 0, 0.08);
-      --hairline: rgba(0, 0, 0, 0.06);
-      --input: rgba(0, 0, 0, 0.1);
-      --ring: rgba(0, 0, 0, 0.2);
-    }
-  `;
-  clonedDoc.head.appendChild(style);
+export function getUserScopedStorageKey(userId: string, key: string) {
+  return `${key}:${userId}`;
+}
+
+export function readUserStorageValue(userId: string | undefined | null, key: string, fallback: string) {
+  if (!userId) return fallback;
+  return readStorageValue(getUserScopedStorageKey(userId, key), fallback);
+}
+
+export function writeUserStorageValue(userId: string | undefined | null, key: string, value: string) {
+  if (!userId) return;
+  writeStorageValue(getUserScopedStorageKey(userId, key), value);
 }

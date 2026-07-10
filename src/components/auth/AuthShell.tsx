@@ -19,7 +19,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
         <section className="w-full animate-fade-up">
           <div className="mb-8 text-center">
             <Link to="/" className="inline-flex items-center justify-center" aria-label={brandName}>
-              <BrandLogo className="h-11 w-auto" />
+              <BrandLogo className="h-14 w-auto" />
             </Link>
             <h1 className="mt-6 text-[32px] font-semibold tracking-[-0.03em] leading-tight">
               {title}

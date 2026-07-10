@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowRight,
   BarChart3,
@@ -14,15 +14,15 @@ import {
   Printer,
   Search,
   Sparkles,
-  Twitter,
   Users,
   Webhook,
   Zap,
   Shield,
 } from "lucide-react";
-import { useEffect, useState, type ComponentType, type SVGProps } from "react";
+import { useState, type ComponentType, type SVGProps } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { SiteShell } from "@/components/envoiz/SiteShell";
 import { brandName, slogan } from "@/lib/envoiz";
 
 export const Route = createFileRoute("/")({
@@ -43,8 +43,7 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased">
-      <Navbar />
+    <SiteShell>
       <main>
         <Hero />
         <TrustedBy />
@@ -57,63 +56,7 @@ function Landing() {
         <FAQ />
         <Contact />
       </main>
-      <Footer />
-    </div>
-  );
-}
-
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const links = [
-    ["Features", "#features"],
-    ["How it Works", "#how"],
-    ["API", "#api"],
-    ["Pricing", "#pricing"],
-    ["Testimonials", "#testimonials"],
-    ["FAQ", "#faq"],
-  ] as const;
-
-  return (
-    <header
-      className={`sticky top-0 z-50 transition-all ${scrolled ? "backdrop-blur-xl bg-white/70 border-b border-hairline" : "bg-transparent"}`}
-    >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <a href="#" className="inline-flex items-center">
-          <BrandLogo className="h-9 w-auto" />
-        </a>
-
-        <nav className="hidden items-center gap-8 text-[13.5px] text-muted-foreground md:flex">
-          {links.map(([label, href]) => (
-            <a key={label} href={href} className="transition-colors hover:text-foreground">
-              {label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <Link
-            to="/login"
-            className="hidden h-9 items-center px-3 text-[13.5px] text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
-          >
-            Login
-          </Link>
-          <Link
-            to="/signup"
-            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-black px-4 text-[13px] font-medium text-white transition-colors hover:bg-black/85"
-          >
-            Get Started <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-      </div>
-    </header>
+    </SiteShell>
   );
 }
 
@@ -237,7 +180,7 @@ function HeroDashboard() {
         className="hidden animate-float items-center gap-2 rounded-xl bg-white px-3 py-2 text-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.03),0_18px_50px_rgba(0,0,0,0.08)] sm:absolute sm:-right-6 sm:bottom-10 sm:flex"
         style={{ animationDelay: "1.2s" }}
       >
-        <Zap className="h-3.5 w-3.5" /> API • 12ms
+        <Zap className="h-3.5 w-3.5" /> API â€¢ 12ms
       </div>
     </div>
   );
@@ -362,7 +305,7 @@ function DashboardPreview() {
         <div className="mt-14 overflow-hidden rounded-3xl border border-hairline bg-white/80 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_24px_80px_rgba(0,0,0,0.08)]">
           <div className="grid grid-cols-12">
             <aside className="col-span-3 hidden border-r border-hairline p-4 md:flex md:flex-col">
-              <BrandLogo className="h-6 w-auto max-w-[110px]" />
+              <BrandLogo className="h-8 w-auto max-w-[150px] -ml-3" />
               <div className="mt-3 flex items-center gap-2 rounded-lg border border-hairline bg-white px-3 py-2 text-[12.5px] text-muted-foreground">
                 <Search className="h-3.5 w-3.5" /> Search
                 <span className="ml-auto inline-flex items-center gap-1 font-mono text-[10.5px]">
@@ -481,7 +424,7 @@ function HowItWorks() {
 
 function DeveloperAPI() {
   const req = `POST /api/v1/invoices
-Authorization: Bearer sk_live_••••
+Authorization: Bearer sk_live_â€¢â€¢â€¢â€¢
 
 {
   "customer": "John Doe",
@@ -557,7 +500,7 @@ Authorization: Bearer sk_live_••••
               {req}
             </pre>
             <div className="border-y border-white/10 bg-white/[0.02] px-4 py-2 font-mono text-[11px] text-white/50">
-              200 OK · 38ms
+              200 OK Â· 38ms
             </div>
             <pre className="overflow-x-auto whitespace-pre p-4 font-mono text-[11.5px] leading-relaxed text-white/80 sm:p-5 sm:text-[12.5px]">
               {res}
@@ -641,7 +584,7 @@ function Pricing() {
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] ${yearly ? "bg-white/15 text-white" : "bg-black/5 text-foreground/70"}`}
               >
-                −20%
+                âˆ’20%
               </span>
             </button>
           </div>
@@ -920,62 +863,5 @@ function Field({
         className="mt-1.5 h-11 w-full rounded-lg border border-hairline bg-white px-3 text-[14px] outline-none focus:border-black/40"
       />
     </div>
-  );
-}
-
-function Footer() {
-  const cols = [
-    ["Product", ["Features", "Pricing", "API", "Roadmap"]],
-    ["Resources", ["Docs", "Blog", "Support", "Status"]],
-    ["Company", ["About", "Privacy Policy", "Terms", "Security"]],
-  ] as const;
-
-  return (
-    <footer className="border-t border-hairline bg-surface/60">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-16 md:grid-cols-5">
-        <div className="md:col-span-2">
-          <BrandLogo className="h-10 w-auto" />
-          <p className="mt-4 max-w-xs text-[13.5px] leading-relaxed text-muted-foreground">
-            Smart invoicing for freelancers and businesses.
-          </p>
-          <div className="mt-5 flex items-center gap-2">
-            {[Github, Twitter, Linkedin].map((Icon, index) => (
-              <a
-                key={index}
-                href="#"
-                className="grid h-9 w-9 place-items-center rounded-full border border-hairline bg-white transition-colors hover:bg-secondary"
-              >
-                <Icon className="h-4 w-4" />
-              </a>
-            ))}
-          </div>
-        </div>
-        {cols.map(([title, links]) => (
-          <div key={title}>
-            <div className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
-              {title}
-            </div>
-            <ul className="mt-4 space-y-2.5 text-[13.5px]">
-              {links.map((link) => (
-                <li key={link}>
-                  <a
-                    href="#"
-                    className="text-foreground/80 transition-colors hover:text-foreground"
-                  >
-                    {link}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-      <div className="border-t border-hairline">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6 text-[12px] text-muted-foreground">
-          <span>© {new Date().getFullYear()} Envoiz, Inc.</span>
-          <span>All systems normal</span>
-        </div>
-      </div>
-    </footer>
   );
 }

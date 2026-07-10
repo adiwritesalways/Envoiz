@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, FileText, Users, Code, Webhook, Settings, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth/auth-context";
 import { supabase } from "@/lib/supabase";
 import { BrandLogo } from "@/components/BrandLogo";
+import { CompanyOnboardingWizard } from "@/components/envoiz/CompanyOnboardingWizard";
 import { toast } from "sonner";
 import { useRef, useState } from "react";
 
@@ -70,11 +71,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-background">
+      <CompanyOnboardingWizard />
       {/* Sidebar */}
       <aside className="w-64 flex-shrink-0 flex flex-col border-r border-border bg-muted/20">
         <div className="p-6 flex items-center">
           <Link to="/" className="hover:opacity-80 transition-opacity">
-            <BrandLogo className="h-10 w-auto" />
+            <BrandLogo className="h-12 w-auto" />
           </Link>
         </div>
 

@@ -2,21 +2,22 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarDays, ChevronDown, Plus, Trash2, ArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import html2canvas from "html2canvas-pro";
+import { pdf } from '@react-pdf/renderer';
+import { InvoicePDFDocument } from '@/components/envoiz/InvoicePDFDocument';
 
 import { DashboardPage, Panel } from "@/components/envoiz/DashboardUI";
 import { RecentInvoicesList } from "@/components/envoiz/RecentInvoicesList";
 import { InvoiceSuccessDialog } from "@/components/envoiz/InvoiceSuccessDialog";
 import { useAuth } from "@/components/auth/auth-context";
 import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  applyExportColorFallbacks,
   brandName,
   currencyOptions,
   defaultCurrency,
   formatInvoiceNumber,
-  readStorageValue,
+  readUserStorageValue,
   settingsStorageKeys,
   type CurrencyCode,
 } from "@/lib/envoiz";
@@ -91,6 +92,7 @@ export const Route = createFileRoute("/dashboard/invoices")({
 
 function InvoicesPage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -122,13 +124,13 @@ function InvoicesPage() {
 
   useEffect(() => {
     setCurrency(
-      readStorageValue(settingsStorageKeys.defaultCurrency, defaultCurrency) as CurrencyCode,
+      readUserStorageValue(user?.id, settingsStorageKeys.defaultCurrency, defaultCurrency) as CurrencyCode,
     );
-    setCompanyName(readStorageValue(settingsStorageKeys.companyName, "Envoiz Studio"));
+    setCompanyName(readUserStorageValue(user?.id, settingsStorageKeys.companyName, "Envoiz Studio"));
     setCompanyAddress(
-      readStorageValue(settingsStorageKeys.companyAddress, "Dhanmondi, Dhaka, Bangladesh"),
+      readUserStorageValue(user?.id, settingsStorageKeys.companyAddress, "Dhanmondi, Dhaka, Bangladesh"),
     );
-  }, []);
+  }, [user?.id]);
 
   const subtotal = useMemo(
     () =>
@@ -143,6 +145,40 @@ function InvoicesPage() {
   const grandTotal = Math.max(0, subtotal - safeDiscount);
 
   const invoiceNumber = formatInvoiceNumber(1);
+
+  const handleDelete = async () => {
+    if (!editingInvoiceId) return;
+    
+    if (!confirm("Are you sure you want to delete this invoice? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      // First try to delete items to clean up, though if cascade delete is on it's not strictly necessary.
+      await supabase.from("envoiz_invoice_items").delete().eq("invoice_id", editingInvoiceId);
+      
+      const { error } = await supabase.from("envoiz_invoices").delete().eq("id", editingInvoiceId);
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("Invoice deleted successfully.");
+      
+      // Reset form
+      setEditingInvoiceId(null);
+      setClientName("");
+      setClientEmail("");
+      setBillingAddress("");
+      setDiscount(0);
+      setNotes("");
+      setItems([{ id: Math.random(), product: "", quantity: 1, unitPrice: 0 }]);
+    } catch (error: any) {
+      console.error("Delete invoice error:", error);
+      toast.error(`Failed to delete invoice: ${error.message || "Make sure you have DELETE permissions set in your Supabase RLS policies."}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!user) {
@@ -178,7 +214,10 @@ function InvoicesPage() {
         invoiceData = data;
 
         // Remove old items before inserting new ones
-        await supabase.from("envoiz_invoice_items").delete().eq("invoice_id", editingInvoiceId);
+        const { error: deleteError } = await supabase.from("envoiz_invoice_items").delete().eq("invoice_id", editingInvoiceId);
+        if (deleteError) {
+          throw new Error("Could not delete old items. Make sure DELETE permission is enabled in Supabase RLS policies for envoiz_invoice_items.");
+        }
       } else {
         const { data, error: invoiceError } = await supabase
           .from("envoiz_invoices")
@@ -219,6 +258,8 @@ function InvoicesPage() {
         if (itemsError) throw itemsError;
       }
 
+      await queryClient.invalidateQueries({ queryKey: ["invoices"] });
+
       toast.success(
         `Invoice ${editingInvoiceId ? "updated" : "saved"} successfully as ${invoiceNumber}.`,
       );
@@ -248,28 +289,77 @@ function InvoicesPage() {
     if (!captureRef.current) return;
 
     try {
-      const canvas = await html2canvas(captureRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        onclone: applyExportColorFallbacks,
-      });
-
-      if (format === "png") {
-        const link = document.createElement("a");
-        link.download = `Invoice-${invoiceNumber}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-        toast.success("Invoice downloaded as PNG.");
-      } else {
-        const imgData = canvas.toDataURL("image/jpeg", 1.0);
-        const pdf = new jsPDF("p", "pt", "a4");
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`Invoice-${invoiceNumber}.pdf`);
+      if (format === "pdf") {
+        const invoiceData = {
+          companyName,
+          companyAddress,
+          clientName,
+          clientEmail,
+          billingAddress,
+          invoiceNumber,
+          issueDate,
+          dueDate,
+          paymentStatus,
+          items,
+          subtotal,
+          discount,
+          grandTotal,
+          currency,
+          notes,
+        };
+        const blob = await pdf(<InvoicePDFDocument invoice={invoiceData} />).toBlob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Invoice-${invoiceNumber}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
         toast.success("Invoice downloaded as PDF.");
+      } else {
+        const el = captureRef.current;
+        const allEls = Array.from(el.querySelectorAll('*')) as HTMLElement[];
+        const targets = [el, ...allEls];
+        
+        // Save previous style and temporarily force A4 dimensions for the capture
+        const elPrevStyle = el.getAttribute('style') ?? '';
+        el.style.width = '794px';
+        el.style.minHeight = '1123px';
+
+        // Save and inline computed color values so html2canvas never sees oklch/oklab
+        const saved = targets.map((node) => {
+          const cs = window.getComputedStyle(node);
+          const prev = node.getAttribute('style') ?? '';
+          node.style.color = cs.color;
+          node.style.backgroundColor = cs.backgroundColor;
+          node.style.borderColor = cs.borderColor;
+          node.style.outlineColor = cs.outlineColor;
+          node.style.boxShadow = cs.boxShadow;
+          return { node, prev };
+        });
+        
+        let canvas: HTMLCanvasElement;
+        try {
+          canvas = await html2canvas(el, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+          });
+        } finally {
+          // Always restore — even if html2canvas throws
+          saved.forEach(({ node, prev }) => {
+            if (node === el) return; // handled separately below
+            node.setAttribute('style', prev);
+            if (!prev) node.removeAttribute('style');
+          });
+          el.setAttribute('style', elPrevStyle);
+          if (!elPrevStyle) el.removeAttribute('style');
+        }
+        
+        const link = document.createElement('a');
+        link.download = `Invoice-${invoiceNumber}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        toast.success('Invoice downloaded as PNG.');
       }
     } catch (error: unknown) {
       console.error("Download error:", error);
@@ -347,6 +437,15 @@ function InvoicesPage() {
           >
             Settings
           </Link>
+          {editingInvoiceId && (
+            <button
+              onClick={handleDelete}
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 rounded-full bg-destructive/10 px-4 py-2 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-50"
+            >
+              Delete Invoice
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={isSaving}
@@ -703,6 +802,12 @@ function InvoicesPage() {
                   <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{notes}</p>
                 </div>
               )}
+
+              <div className="mt-12 flex justify-center pb-2">
+                <p className="text-[11px] text-muted-foreground/60 tracking-widest uppercase">
+                  Powered by <span className="font-semibold text-foreground/50 tracking-normal">Envoiz</span>
+                </p>
+              </div>
             </div>
           </Panel>
         </div>
@@ -715,70 +820,6 @@ function InvoicesPage() {
         isUpdate={wasUpdate}
       />
     </DashboardPage>
-  );
-}
-
-type RecentUser = { id: string } | null;
-
-function RecentInvoices({ user }: { user: RecentUser }) {
-  const [invoices, setInvoices] = useState<StoredInvoiceRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    const fetchInvoices = async () => {
-      const { data, error } = await supabase
-        .from("envoiz_invoices")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(10);
-      if (error) {
-        console.error("Error fetching recent invoices:", error);
-      } else if (data) {
-        setInvoices(data);
-      }
-      setLoading(false);
-    };
-    fetchInvoices();
-  }, [user]);
-
-  if (!user) return null;
-
-  return (
-    <div className="mt-12 space-y-4">
-      <h2 className="text-lg font-semibold tracking-tight">Recent Invoices</h2>
-      <Panel className="overflow-hidden min-w-0">
-        {loading ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">Loading invoices...</div>
-        ) : invoices.length === 0 ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">
-            No recent invoices found.
-          </div>
-        ) : (
-          <div className="divide-y divide-hairline overflow-x-auto">
-            <div className="grid min-w-[500px] grid-cols-4 bg-surface/70 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              <div>Invoice</div>
-              <div>Client</div>
-              <div>Issue Date</div>
-              <div className="text-right">Status</div>
-            </div>
-            {invoices.map((inv) => (
-              <div
-                key={inv.id}
-                className="grid min-w-[500px] grid-cols-4 items-center px-6 py-4 text-[13px] hover:bg-surface/50 transition"
-              >
-                <div className="font-medium">{inv.invoice_number}</div>
-                <div className="text-muted-foreground truncate pr-4">{inv.client_name || "—"}</div>
-                <div className="text-muted-foreground">{formatDateLabel(inv.issue_date)}</div>
-                <div className="text-right">
-                  <PaymentStatusPill status={inv.payment_status || "Pending"} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
-    </div>
   );
 }
 
@@ -910,9 +951,9 @@ function CurrencyField({
 
 function PaymentStatusPill({ status }: { status: PaymentStatus }) {
   const classes: Record<PaymentStatus, string> = {
-    Paid: "bg-foreground text-background",
-    Pending: "bg-secondary text-foreground",
-    Overdue: "bg-destructive/10 text-destructive",
+    Paid: "bg-[#dcfce7] text-[#15803d]",
+    Pending: "bg-[#f1f1f1] text-[#525252]",
+    Overdue: "bg-[#fee2e2] text-[#b91c1c]",
   };
 
   return (
