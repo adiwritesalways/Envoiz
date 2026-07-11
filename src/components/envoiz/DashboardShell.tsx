@@ -10,7 +10,8 @@ import { supabase } from "@/lib/supabase";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CompanyOnboardingWizard } from "@/components/envoiz/CompanyOnboardingWizard";
 import { toast } from "sonner";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { readUserStorageValue, settingsStorageKeys } from "@/lib/envoiz";
 
 // Navigation items
 const navItems = [
@@ -27,6 +28,19 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  // One-time migration: if company prefs exist in localStorage but not yet in
+  // Supabase metadata (users who set up before the metadata feature was added),
+  // push them silently so every browser sees the same values going forward.
+  useEffect(() => {
+    if (!user?.id || user.user_metadata?.company_name) return;
+    const localName    = readUserStorageValue(user.id, settingsStorageKeys.companyName,    "");
+    const localAddress = readUserStorageValue(user.id, settingsStorageKeys.companyAddress, "");
+    if (!localName && !localAddress) return;
+    void supabase.auth
+      .updateUser({ data: { company_name: localName || undefined, company_address: localAddress || undefined } })
+      .then(({ error }) => { if (!error) void refreshSession(); });
+  }, [user?.id]);
 
   // Manual active detection — more reliable than activeProps during SSR hydration.
   // Overview uses exact match; all other pages use startsWith.

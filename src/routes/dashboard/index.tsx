@@ -58,11 +58,15 @@ function generateRevenueData(invoices: any[]) {
 function DashboardOverview() {
   const { user } = useAuth();
   
-  // Read directly from Supabase user metadata — no localStorage, no effect needed.
-  // Falls back to localStorage (legacy) then to the generic placeholder.
-  const companyName =
-    user?.user_metadata?.company_name ||
-    readUserStorageValue(user?.id, settingsStorageKeys.companyName, "your business");
+  // Reactive state so the greeting updates the moment metadata or localStorage
+  // changes (e.g. after the DashboardShell auto-migration refreshes the session).
+  const [companyName, setCompanyName] = React.useState("");
+  React.useEffect(() => {
+    const name =
+      user?.user_metadata?.company_name ||
+      readUserStorageValue(user?.id, settingsStorageKeys.companyName, "");
+    setCompanyName(name);
+  }, [user?.user_metadata?.company_name, user?.id]);
   
   const invoicesQuery = useQuery({
     queryKey: ["invoices", user?.id],
@@ -94,7 +98,7 @@ function DashboardOverview() {
               Good morning
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-              Here's how {companyName} is doing today.
+              Here's how {companyName || "your business"} is doing today.
             </h1>
           </div>
           <div className="flex items-center gap-2">
