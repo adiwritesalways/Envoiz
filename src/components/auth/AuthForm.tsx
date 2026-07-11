@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 
 import { supabase } from "@/lib/supabase";
 
@@ -19,7 +19,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [oauthProvider, setOauthProvider] = useState<"google" | "github" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [info, setInfo] = useState<ReactNode>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -51,7 +51,14 @@ export function AuthForm({ mode }: AuthFormProps) {
         // identities is empty when the email already belongs to an existing account.
         const isNewAccount = (data.user?.identities?.length ?? 0) > 0;
         if (!isNewAccount) {
-          setInfo("An account with this email already exists. Please sign in instead.");
+          setInfo(
+            <>
+              An account with this email already exists.{" "}
+              <a href="/login" className="underline font-medium hover:opacity-70">
+                Please sign in →
+              </a>
+            </>,
+          );
           return;
         }
 
@@ -70,6 +77,40 @@ export function AuthForm({ mode }: AuthFormProps) {
       });
 
       if (signInError) {
+        // "Invalid login credentials" is Supabase's catch-all for both wrong
+        // password AND non-existent email. Try signing the user up — if the
+        // account is genuinely new (identities.length > 0) we create it and
+        // send them to onboarding. If identities is empty the email exists but
+        // the password is wrong, so we surface a clearer message.
+        if (signInError.message.toLowerCase().includes("invalid login credentials")) {
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: oauthRedirectTo,
+              data: { onboarding_pending: true },
+            },
+          });
+
+          if (signUpError) throw signUpError;
+
+          const isNewAccount = (signUpData.user?.identities?.length ?? 0) > 0;
+
+          if (!isNewAccount) {
+            // Account exists — password was just wrong
+            throw new Error("Incorrect password. Please try again.");
+          }
+
+          // Brand-new account created from the login page
+          if (signUpData.session) {
+            await navigate({ to: "/dashboard" });
+            return;
+          }
+
+          setInfo("Check your email to verify your account before signing in.");
+          return;
+        }
+
         throw signInError;
       }
 
