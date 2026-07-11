@@ -36,12 +36,23 @@ export function AuthForm({ mode }: AuthFormProps) {
             emailRedirectTo: oauthRedirectTo,
             data: {
               full_name: fullName,
+              // Stamp new accounts so the onboarding wizard knows to appear.
+              // Supabase does NOT apply this metadata to existing accounts on a
+              // duplicate signUp call, so returning users are never affected.
+              onboarding_pending: true,
             },
           },
         });
 
         if (signUpError) {
           throw signUpError;
+        }
+
+        // identities is empty when the email already belongs to an existing account.
+        const isNewAccount = (data.user?.identities?.length ?? 0) > 0;
+        if (!isNewAccount) {
+          setInfo("An account with this email already exists. Please sign in instead.");
+          return;
         }
 
         if (data.session) {

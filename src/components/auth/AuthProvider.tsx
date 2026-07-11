@@ -28,9 +28,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
       setLoading(false);
+
+      // Detect brand-new OAuth accounts (Google / GitHub).
+      // Email signups stamp onboarding_pending at signUp() call time.
+      // OAuth signups have no equivalent hook, so we infer "new account"
+      // by checking whether created_at is within the last 2 minutes and
+      // neither onboarding flag has been set yet.
+      if (event === "SIGNED_IN" && nextSession?.user) {
+        const u = nextSession.user;
+        const ageMs = Date.now() - new Date(u.created_at).getTime();
+        const isNew = ageMs < 120_000; // 2 minutes
+        const alreadyFlagged =
+          u.user_metadata?.onboarding_pending ||
+          u.user_metadata?.onboarding_complete;
+        if (isNew && !alreadyFlagged) {
+          void supabase.auth.updateUser({ data: { onboarding_pending: true } });
+        }
+      }
     });
 
     return () => {

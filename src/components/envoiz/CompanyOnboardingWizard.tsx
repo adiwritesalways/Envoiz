@@ -33,16 +33,14 @@ export function CompanyOnboardingWizard() {
     const savedCompanyName = readUserStorageValue(user.id, settingsStorageKeys.companyName, "");
     const savedCompanyAddress = readUserStorageValue(user.id, settingsStorageKeys.companyAddress, "");
 
-    // Check Supabase user metadata first — this persists across browsers and devices.
-    // Fall back to localStorage for users who completed onboarding before this was added.
-    const metadataComplete = user.user_metadata?.onboarding_complete === true;
-    const localComplete = !!readUserStorageValue(user.id, settingsStorageKeys.onboardingComplete, "");
-    const onboardingComplete = metadataComplete || localComplete;
-
     setCompanyName(savedCompanyName);
     setCompanyAddress(savedCompanyAddress);
     setAvatarUrl(user.user_metadata?.avatar_url);
-    setOpen(!onboardingComplete);
+
+    // Only show for brand-new accounts — ones that were explicitly stamped with
+    // onboarding_pending at signup time. Existing users logging in will never
+    // have this flag, so the wizard will never appear for them.
+    setOpen(user.user_metadata?.onboarding_pending === true);
   }, [user]);
 
   const uploadAvatar = async (file: File) => {
@@ -95,9 +93,11 @@ export function CompanyOnboardingWizard() {
         settingsStorageKeys.companyAddress,
         companyAddress.trim() || DEFAULT_COMPANY_ADDRESS,
       );
-      // Persist to Supabase user metadata first — this is the cross-device source of truth.
-      // Only write to localStorage after metadata succeeds, so both stores stay in sync.
-      const { error: metaError } = await supabase.auth.updateUser({ data: { onboarding_complete: true } });
+      // Persist completion to Supabase metadata — cross-device, permanent.
+      // Clear onboarding_pending so the wizard never shows again on any browser.
+      const { error: metaError } = await supabase.auth.updateUser({
+        data: { onboarding_pending: null, onboarding_complete: true },
+      });
       if (metaError) throw metaError;
       writeUserStorageValue(user.id, settingsStorageKeys.onboardingComplete, "true");
       await refreshSession();
