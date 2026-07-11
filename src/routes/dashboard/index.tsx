@@ -13,7 +13,6 @@ import {
 } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Calendar, ChevronDown, Download, Plus } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-context";
-import { DashboardShell } from "@/components/envoiz/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { RecentInvoicesList } from "@/components/envoiz/RecentInvoicesList";
 import { cn } from "@/lib/utils";
@@ -89,10 +88,9 @@ function DashboardOverview() {
   ];
 
   return (
-    <DashboardShell>
-      <div className="space-y-6">
-        {/* Greeting */}
-        <header className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-6">
+      {/* Greeting */}
+      <header className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
               Good morning
@@ -143,8 +141,7 @@ function DashboardOverview() {
             viewAllHref="/dashboard/invoices"
           />
         </section>
-      </div>
-    </DashboardShell>
+    </div>
   );
 }
 

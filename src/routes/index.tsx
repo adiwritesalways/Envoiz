@@ -180,7 +180,7 @@ function HeroDashboard() {
         className="hidden animate-float items-center gap-2 rounded-xl bg-white px-3 py-2 text-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.03),0_18px_50px_rgba(0,0,0,0.08)] sm:absolute sm:-right-6 sm:bottom-10 sm:flex"
         style={{ animationDelay: "1.2s" }}
       >
-        <Zap className="h-3.5 w-3.5" /> API â€¢ 12ms
+        <Zap className="h-3.5 w-3.5" /> API • 12ms
       </div>
     </div>
   );
@@ -424,7 +424,7 @@ function HowItWorks() {
 
 function DeveloperAPI() {
   const req = `POST /api/v1/invoices
-Authorization: Bearer sk_live_â€¢â€¢â€¢â€¢
+Authorization: Bearer sk_live_••••
 
 {
   "customer": "John Doe",
@@ -500,7 +500,7 @@ Authorization: Bearer sk_live_â€¢â€¢â€¢â€¢
               {req}
             </pre>
             <div className="border-y border-white/10 bg-white/[0.02] px-4 py-2 font-mono text-[11px] text-white/50">
-              200 OK Â· 38ms
+              200 OK · 38ms
             </div>
             <pre className="overflow-x-auto whitespace-pre p-4 font-mono text-[11.5px] leading-relaxed text-white/80 sm:p-5 sm:text-[12.5px]">
               {res}
