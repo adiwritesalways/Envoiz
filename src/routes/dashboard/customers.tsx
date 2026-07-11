@@ -174,8 +174,8 @@ function CustomersPage() {
           </div>
         ) : customersQuery.isError ? (
           <EmptyState
-            title="We couldn't load customers."
-            description="The list is derived from invoices, so this usually means Supabase returned an error while fetching invoice rows."
+            title="No customers yet."
+            description="Create your first invoice to populate the customer directory automatically."
           />
         ) : customers.length ? (
           <div className="overflow-hidden rounded-3xl border border-hairline">

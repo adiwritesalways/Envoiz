@@ -149,63 +149,46 @@ function DashboardOverview() {
         </div>
       </header>
 
-      {!hasInvoices && !invoicesQuery.isLoading ? (
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-hairline bg-surface/40 py-16 text-center">
-          <FileText className="h-10 w-10 text-muted-foreground/40" />
-          <h2 className="mt-4 text-[16px] font-semibold">No invoices yet</h2>
-          <p className="mt-2 max-w-sm text-[13px] text-muted-foreground">
-            Create your first invoice to start tracking your revenue.
-          </p>
-          <Button asChild size="sm" className="mt-6">
-            <Link to="/dashboard/invoices">
-              <Plus className="h-3.5 w-3.5" /> Create Invoice
-            </Link>
-          </Button>
-        </div>
-      ) : (
-        <>
-          <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {dynamicMetrics.map((m) => (
-              <Card
-                key={m.label}
-                className={cn(
-                  "border-border bg-card p-5 shadow-none flex flex-col justify-between",
-                  m.accent === "overdue" && overdueCount > 0 &&
-                    "border-red-200 bg-red-50/50",
-                )}
-              >
-                <div
-                  className={cn(
-                    "text-[11px] uppercase tracking-[0.18em] text-muted-foreground",
-                    m.accent === "overdue" && overdueCount > 0 && "text-red-500",
-                  )}
-                >
-                  {m.label}
-                </div>
-                <div
-                  className={cn(
-                    "mt-2 font-mono text-2xl font-semibold tabular-nums tracking-tight",
-                    m.accent === "overdue" && overdueCount > 0 && "text-red-600",
-                  )}
-                >
-                  {m.value}
-                </div>
-              </Card>
-            ))}
-          </section>
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {dynamicMetrics.map((m) => (
+          <Card
+            key={m.label}
+            className={cn(
+              "border-border bg-card p-5 shadow-none flex flex-col justify-between",
+              m.accent === "overdue" && overdueCount > 0 &&
+                "border-red-200 bg-red-50/50",
+            )}
+          >
+            <div
+              className={cn(
+                "text-[11px] uppercase tracking-[0.18em] text-muted-foreground",
+                m.accent === "overdue" && overdueCount > 0 && "text-red-500",
+              )}
+            >
+              {m.label}
+            </div>
+            <div
+              className={cn(
+                "mt-2 font-mono text-2xl font-semibold tabular-nums tracking-tight",
+                m.accent === "overdue" && overdueCount > 0 && "text-red-600",
+              )}
+            >
+              {invoicesQuery.isLoading ? <span className="text-muted-foreground/40">—</span> : m.value}
+            </div>
+          </Card>
+        ))}
+      </section>
 
-          <RevenueChart revenueData={revenueData} currency={currency} />
+      <RevenueChart revenueData={revenueData} currency={currency} />
 
-          <section className="grid grid-cols-1 gap-4">
-            <RecentInvoicesList
-              user={user}
-              title="Recent invoices"
-              description="The latest invoices across all customers."
-              viewAllHref="/dashboard/invoices"
-            />
-          </section>
-        </>
-      )}
+      <section className="grid grid-cols-1 gap-4">
+        <RecentInvoicesList
+          user={user}
+          title="Recent invoices"
+          description="The latest invoices across all customers."
+          viewAllHref="/dashboard/invoices"
+        />
+      </section>
     </div>
     </DashboardShell>
   );

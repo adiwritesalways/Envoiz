@@ -133,7 +133,7 @@ function InvoicesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -327,66 +327,72 @@ function InvoicesPage() {
     }
 
     setIsSaving(true);
+
+    const buildPayload = (withTaxRate: boolean) => ({
+      invoice_number: invoiceNumber,
+      client_name: clientName,
+      client_email: clientEmail,
+      billing_address: billingAddress,
+      issue_date: issueDate,
+      due_date: dueDate,
+      payment_status: paymentStatus,
+      currency,
+      discount,
+      ...(withTaxRate ? { tax_rate: taxRate } : {}),
+      notes,
+      company_name: companyName,
+      company_address: companyAddress,
+    });
+
+    const isMissingColumn = (err: unknown) =>
+      err instanceof Error && err.message.toLowerCase().includes("tax_rate");
+
     try {
       let invoiceData;
       if (editingInvoiceId) {
-        const { data, error: invoiceError } = await supabase
+        let result = await supabase
           .from("envoiz_invoices")
-          .update({
-            invoice_number: invoiceNumber,
-            client_name: clientName,
-            client_email: clientEmail,
-            billing_address: billingAddress,
-            issue_date: issueDate,
-            due_date: dueDate,
-            payment_status: paymentStatus,
-            currency,
-            discount,
-            tax_rate: taxRate,
-            notes,
-            company_name: companyName,
-            company_address: companyAddress,
-          })
+          .update(buildPayload(true))
           .eq("id", editingInvoiceId)
           .select()
           .single();
 
-        if (invoiceError) throw invoiceError;
-        invoiceData = data;
+        if (result.error && isMissingColumn(result.error)) {
+          result = await supabase
+            .from("envoiz_invoices")
+            .update(buildPayload(false))
+            .eq("id", editingInvoiceId)
+            .select()
+            .single();
+        }
+
+        if (result.error) throw result.error;
+        invoiceData = result.data;
 
         const { error: deleteError } = await supabase
           .from("envoiz_invoice_items")
           .delete()
           .eq("invoice_id", editingInvoiceId);
         if (deleteError) {
-          throw new Error(
-            "Could not delete old items. Make sure DELETE permission is enabled in Supabase RLS policies for envoiz_invoice_items.",
-          );
+          throw new Error("Could not update invoice items. Check DELETE permissions in Supabase.");
         }
       } else {
-        const { data, error: invoiceError } = await supabase
+        let result = await supabase
           .from("envoiz_invoices")
-          .insert({
-            user_id: user.id,
-            invoice_number: invoiceNumber,
-            client_name: clientName,
-            client_email: clientEmail,
-            billing_address: billingAddress,
-            issue_date: issueDate,
-            due_date: dueDate,
-            payment_status: paymentStatus,
-            currency,
-            discount,
-            tax_rate: taxRate,
-            notes,
-            company_name: companyName,
-            company_address: companyAddress,
-          })
+          .insert({ user_id: user.id, ...buildPayload(true) })
           .select()
           .single();
 
-        if (invoiceError) throw invoiceError;
-        invoiceData = data;
+        if (result.error && isMissingColumn(result.error)) {
+          result = await supabase
+            .from("envoiz_invoices")
+            .insert({ user_id: user.id, ...buildPayload(false) })
+            .select()
+            .single();
+        }
+
+        if (result.error) throw result.error;
+        invoiceData = result.data;
       }
 
       const itemsToInsert = items.map((item) => ({
