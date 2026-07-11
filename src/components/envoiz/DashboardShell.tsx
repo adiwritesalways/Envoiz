@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { LayoutDashboard, FileText, Users, Code, Webhook, Settings, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,18 @@ const navItems = [
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, refreshSession } = useAuth();
+  const { pathname } = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Manual active detection — more reliable than activeProps during SSR hydration.
+  // Overview uses exact match; all other pages use startsWith.
+  const isActive = (to: string) =>
+    to === "/dashboard"
+      ? pathname === "/dashboard" || pathname === "/dashboard/"
+      : pathname.startsWith(to);
+
+  const currentPageLabel = navItems.find((item) => isActive(item.to))?.label ?? "Overview";
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -99,14 +109,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <Link
               key={item.label}
               to={item.to}
-              activeProps={{
-                className: "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary",
-              }}
-              inactiveProps={{
-                className: "text-muted-foreground hover:bg-muted hover:text-foreground",
-              }}
-              activeOptions={{ exact: item.to === "/dashboard" }}
-              className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors"
+              className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive(item.to)
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
             >
               <item.icon className="h-4 w-4" />
               {item.label}
@@ -136,7 +143,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <header className="h-14 flex-shrink-0 flex items-center justify-between border-b border-border px-6 bg-background">
           <div className="flex items-center text-sm font-medium text-muted-foreground">
-            Overview
+            {currentPageLabel}
           </div>
           <div className="flex items-center gap-4">
             <input
