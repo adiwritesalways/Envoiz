@@ -3,7 +3,7 @@ import { envoizLpLogoDataUri } from "./envoiz-logo-data";
 export const brandName = "Envoiz";
 export const slogan = "Smart Invoicing for Freelancers and Businesses";
 
-export const faviconUrl = new URL("../../envoiz-site-favicon-512.png", import.meta.url).href;
+export const faviconUrl = "/envoiz-site-favicon-512.png";
 
 // Inline the horizontal logo so the landing page can render it immediately
 // without waiting on an extra image request.
