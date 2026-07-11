@@ -128,6 +128,22 @@ export const Route = createFileRoute("/dashboard/invoices")({
   component: InvoicesPage,
 });
 
+function getScrollContainer() {
+  return document.getElementById("dashboard-scroll");
+}
+
+function scrollToTop() {
+  getScrollContainer()?.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function scrollToInvoiceList() {
+  const container = getScrollContainer();
+  const el = document.getElementById("invoice-list");
+  if (!container || !el) return;
+  const offset = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+  container.scrollTo({ top: offset - 24, behavior: "smooth" });
+}
+
 function InvoicesPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -214,10 +230,7 @@ function InvoicesPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash === "#invoice-list") {
-      const el = document.getElementById("invoice-list");
-      if (el) {
-        setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 300);
-      }
+      setTimeout(() => scrollToInvoiceList(), 300);
     }
   }, []);
 
@@ -578,7 +591,7 @@ function InvoicesPage() {
 
     setIsFormOpen(true);
     setShowMobilePreview(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop();
   };
 
   return (
@@ -589,7 +602,7 @@ function InvoicesPage() {
       actions={
         <>
           <button
-            onClick={() => document.getElementById("invoice-list")?.scrollIntoView({ behavior: "smooth" })}
+            onClick={scrollToInvoiceList}
             className="inline-flex items-center gap-2 rounded-full border border-hairline bg-white px-4 py-2 text-[13px] font-medium transition-colors hover:bg-secondary"
           >
             <FileText className="h-3.5 w-3.5" /> View all invoices

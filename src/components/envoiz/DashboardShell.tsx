@@ -218,7 +218,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto px-4 py-5 md:px-5 md:py-6 lg:px-8 lg:py-8 xl:px-10">
+        <div id="dashboard-scroll" className="flex-1 overflow-auto px-4 py-5 md:px-5 md:py-6 lg:px-8 lg:py-8 xl:px-10">
           <div className="mx-auto w-full max-w-[1760px]">{children}</div>
         </div>
       </main>
