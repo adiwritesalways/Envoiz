@@ -31,11 +31,12 @@ export const Route = createFileRoute("/dashboard/settings")({
 });
 
 function SettingsPage() {
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const router = useRouter();
   const [companyName, setCompanyName] = useState("Envoiz Studio");
   const [companyAddress, setCompanyAddress] = useState("Dhanmondi, Dhaka, Bangladesh");
   const [defaultCurrencyValue, setDefaultCurrencyValue] = useState<CurrencyCode>(defaultCurrency);
+  const [saving, setSaving] = useState(false);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -43,20 +44,43 @@ function SettingsPage() {
   };
 
   useEffect(() => {
-    setCompanyName(readUserStorageValue(user?.id, settingsStorageKeys.companyName, "Envoiz Studio"));
+    if (!user) return;
+    // Prefer Supabase metadata (cross-device). Fall back to localStorage for
+    // values set before metadata storage was introduced.
+    setCompanyName(
+      user.user_metadata?.company_name ||
+      readUserStorageValue(user.id, settingsStorageKeys.companyName, "Envoiz Studio"),
+    );
     setCompanyAddress(
-      readUserStorageValue(user?.id, settingsStorageKeys.companyAddress, "Dhanmondi, Dhaka, Bangladesh"),
+      user.user_metadata?.company_address ||
+      readUserStorageValue(user.id, settingsStorageKeys.companyAddress, "Dhanmondi, Dhaka, Bangladesh"),
     );
     setDefaultCurrencyValue(
-      readUserStorageValue(user?.id, settingsStorageKeys.defaultCurrency, defaultCurrency) as CurrencyCode,
+      readUserStorageValue(user.id, settingsStorageKeys.defaultCurrency, defaultCurrency) as CurrencyCode,
     );
   }, [user?.id]);
 
-  const savePreferences = () => {
-    writeUserStorageValue(user?.id, settingsStorageKeys.companyName, companyName);
-    writeUserStorageValue(user?.id, settingsStorageKeys.companyAddress, companyAddress);
-    writeUserStorageValue(user?.id, settingsStorageKeys.defaultCurrency, defaultCurrencyValue);
-    toast.success("Preferences saved successfully.");
+  const savePreferences = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      // Save company prefs to Supabase metadata — persists across all devices.
+      const { error } = await supabase.auth.updateUser({
+        data: { company_name: companyName, company_address: companyAddress },
+      });
+      if (error) throw error;
+      await refreshSession();
+
+      // Mirror to localStorage as a same-browser cache.
+      writeUserStorageValue(user.id, settingsStorageKeys.companyName, companyName);
+      writeUserStorageValue(user.id, settingsStorageKeys.companyAddress, companyAddress);
+      writeUserStorageValue(user.id, settingsStorageKeys.defaultCurrency, defaultCurrencyValue);
+      toast.success("Preferences saved successfully.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save preferences.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -135,9 +159,10 @@ function SettingsPage() {
             </div>
             <button
               onClick={savePreferences}
-              className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-colors hover:opacity-90"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Save preferences
+              {saving ? "Saving..." : "Save preferences"}
             </button>
           </div>
         </Panel>

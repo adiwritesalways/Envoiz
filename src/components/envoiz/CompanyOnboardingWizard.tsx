@@ -30,8 +30,14 @@ export function CompanyOnboardingWizard() {
       return;
     }
 
-    const savedCompanyName = readUserStorageValue(user.id, settingsStorageKeys.companyName, "");
-    const savedCompanyAddress = readUserStorageValue(user.id, settingsStorageKeys.companyAddress, "");
+    // Prefer Supabase metadata (cross-device). Fall back to localStorage for
+    // users who set prefs before metadata storage was introduced.
+    const savedCompanyName =
+      user.user_metadata?.company_name ||
+      readUserStorageValue(user.id, settingsStorageKeys.companyName, "");
+    const savedCompanyAddress =
+      user.user_metadata?.company_address ||
+      readUserStorageValue(user.id, settingsStorageKeys.companyAddress, "");
 
     setCompanyName(savedCompanyName);
     setCompanyAddress(savedCompanyAddress);
@@ -83,22 +89,25 @@ export function CompanyOnboardingWizard() {
 
     setSaving(true);
     try {
-      writeUserStorageValue(
-        user.id,
-        settingsStorageKeys.companyName,
-        companyName.trim() || DEFAULT_COMPANY_NAME,
-      );
-      writeUserStorageValue(
-        user.id,
-        settingsStorageKeys.companyAddress,
-        companyAddress.trim() || DEFAULT_COMPANY_ADDRESS,
-      );
-      // Persist completion to Supabase metadata — cross-device, permanent.
-      // Clear onboarding_pending so the wizard never shows again on any browser.
+      const finalName = companyName.trim() || DEFAULT_COMPANY_NAME;
+      const finalAddress = companyAddress.trim() || DEFAULT_COMPANY_ADDRESS;
+
+      // Persist everything to Supabase metadata — cross-device, permanent.
+      // company_name and company_address are stored here so every browser and
+      // device sees the same values without touching localStorage.
       const { error: metaError } = await supabase.auth.updateUser({
-        data: { onboarding_pending: null, onboarding_complete: true },
+        data: {
+          company_name: finalName,
+          company_address: finalAddress,
+          onboarding_pending: null,
+          onboarding_complete: true,
+        },
       });
       if (metaError) throw metaError;
+
+      // Mirror to localStorage as a same-browser cache.
+      writeUserStorageValue(user.id, settingsStorageKeys.companyName, finalName);
+      writeUserStorageValue(user.id, settingsStorageKeys.companyAddress, finalAddress);
       writeUserStorageValue(user.id, settingsStorageKeys.onboardingComplete, "true");
       await refreshSession();
       toast.success("Workspace setup saved.");

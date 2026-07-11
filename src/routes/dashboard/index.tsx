@@ -58,11 +58,11 @@ function generateRevenueData(invoices: any[]) {
 function DashboardOverview() {
   const { user } = useAuth();
   
-  const [companyName, setCompanyName] = React.useState("your business");
-
-  React.useEffect(() => {
-    setCompanyName(readUserStorageValue(user?.id, settingsStorageKeys.companyName, "your business"));
-  }, [user?.id]);
+  // Read directly from Supabase user metadata — no localStorage, no effect needed.
+  // Falls back to localStorage (legacy) then to the generic placeholder.
+  const companyName =
+    user?.user_metadata?.company_name ||
+    readUserStorageValue(user?.id, settingsStorageKeys.companyName, "your business");
   
   const invoicesQuery = useQuery({
     queryKey: ["invoices", user?.id],
