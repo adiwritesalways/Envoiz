@@ -13,7 +13,6 @@ import {
   Search,
   Trash2,
   ArrowRight,
-  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -212,6 +211,15 @@ function InvoicesPage() {
       loadNextInvoiceNumber();
     }
   }, [user?.id, editingInvoiceId, loadNextInvoiceNumber]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#invoice-list") {
+      const el = document.getElementById("invoice-list");
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 300);
+      }
+    }
+  }, []);
 
   const invoiceListQuery = useQuery({
     queryKey: ["invoiceListRaw", user?.id],
@@ -573,195 +581,6 @@ function InvoicesPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (!isFormOpen) {
-    return (
-      <DashboardPage
-        eyebrow="Invoices"
-        title="Your invoices"
-        description="Create, manage, and track all your invoices in one place."
-        actions={
-          <button
-            onClick={openNewForm}
-            className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-colors hover:opacity-90"
-          >
-            <Plus className="h-3.5 w-3.5" /> New Invoice
-          </button>
-        }
-      >
-        <Panel>
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by client or invoice #..."
-                className="h-10 w-full rounded-2xl border border-hairline bg-white pl-9 pr-4 text-[13px] outline-none transition focus:border-foreground/20"
-              />
-            </div>
-            <div className="flex items-center gap-1.5 rounded-2xl border border-hairline bg-white p-1">
-              {(["all", "Pending", "Paid", "Overdue"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={cn(
-                    "rounded-xl px-3 py-1.5 text-[12px] font-medium transition-colors",
-                    statusFilter === s
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {s === "all" ? "All" : s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {invoiceListQuery.isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading invoices...
-            </div>
-          ) : filteredInvoices.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <FileText className="h-9 w-9 text-muted-foreground/40" />
-              <p className="text-[14px] font-medium">
-                {(invoiceListQuery.data ?? []).length === 0
-                  ? "No invoices yet."
-                  : "No invoices match your filters."}
-              </p>
-              <p className="text-[13px] text-muted-foreground">
-                {(invoiceListQuery.data ?? []).length === 0
-                  ? "Create your first one to get started."
-                  : "Try a different search or filter."}
-              </p>
-              {(invoiceListQuery.data ?? []).length === 0 && (
-                <button
-                  onClick={openNewForm}
-                  className="mt-2 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background hover:opacity-90 transition-colors"
-                >
-                  <Plus className="h-3.5 w-3.5" /> New Invoice
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-3xl border border-hairline">
-              <div className="hidden sm:grid sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 bg-surface/70 px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                <span>Invoice #</span>
-                <span>Client</span>
-                <span>Issue date</span>
-                <span>Due date</span>
-                <span>Amount</span>
-                <span>Status</span>
-              </div>
-              <div className="divide-y divide-hairline bg-white">
-                {filteredInvoices.map((inv) => {
-                  const total = computeListTotal(inv);
-                  const curr = (inv.currency as CurrencyCode) || "USD";
-                  return (
-                    <div
-                      key={inv.id}
-                      className="group flex flex-col gap-3 px-4 py-4 sm:grid sm:grid-cols-[auto_1fr_auto_auto_auto_auto] sm:items-center sm:gap-4 cursor-pointer hover:bg-surface/40 transition-colors"
-                    >
-                      <div
-                        onClick={() => handleSelectInvoice(inv)}
-                        className="font-mono text-[12px] font-medium text-muted-foreground"
-                      >
-                        {inv.invoice_number || "—"}
-                      </div>
-                      <div
-                        onClick={() => handleSelectInvoice(inv)}
-                        className="min-w-0"
-                      >
-                        <div className="truncate text-[14px] font-medium">
-                          {inv.client_name || "Unknown"}
-                        </div>
-                        <div className="text-[12px] text-muted-foreground sm:hidden">
-                          {inv.payment_status && (
-                            <span
-                              className={cn(
-                                "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
-                                statusColors[inv.payment_status] ?? "bg-secondary text-foreground",
-                              )}
-                            >
-                              {inv.payment_status}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div
-                        onClick={() => handleSelectInvoice(inv)}
-                        className="hidden sm:block text-[12px] text-muted-foreground whitespace-nowrap"
-                      >
-                        {formatDateShort(inv.issue_date)}
-                      </div>
-                      <div
-                        onClick={() => handleSelectInvoice(inv)}
-                        className="hidden sm:block text-[12px] text-muted-foreground whitespace-nowrap"
-                      >
-                        {formatDateShort(inv.due_date)}
-                      </div>
-                      <div
-                        onClick={() => handleSelectInvoice(inv)}
-                        className="text-[13px] font-medium tabular-nums sm:text-right"
-                      >
-                        {money(total, curr)}
-                      </div>
-                      <div className="flex items-center justify-between sm:justify-end gap-3">
-                        {inv.payment_status && (
-                          <span
-                            className={cn(
-                              "hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium",
-                              statusColors[inv.payment_status] ?? "bg-secondary text-foreground",
-                            )}
-                          >
-                            {inv.payment_status}
-                          </span>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleSelectInvoice(inv)}
-                            className="h-8 w-8 inline-flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                            title="Edit"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDeleteDialog(
-                                inv.id,
-                                inv.invoice_number || inv.id,
-                                inv.client_name || "Unknown",
-                              );
-                            }}
-                            className="h-8 w-8 inline-flex items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </Panel>
-
-        <DeleteConfirmDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          invoiceNumber={deleteTarget?.invoiceNumber ?? ""}
-          clientName={deleteTarget?.clientName ?? ""}
-          loading={isSaving}
-          onConfirm={handleDeleteConfirm}
-        />
-      </DashboardPage>
-    );
-  }
-
   return (
     <DashboardPage
       eyebrow="Invoices"
@@ -770,10 +589,10 @@ function InvoicesPage() {
       actions={
         <>
           <button
-            onClick={closeForm}
+            onClick={() => document.getElementById("invoice-list")?.scrollIntoView({ behavior: "smooth" })}
             className="inline-flex items-center gap-2 rounded-full border border-hairline bg-white px-4 py-2 text-[13px] font-medium transition-colors hover:bg-secondary"
           >
-            <X className="h-3.5 w-3.5" /> Cancel
+            <FileText className="h-3.5 w-3.5" /> View all invoices
           </button>
           <Link
             to="/dashboard/settings"
@@ -1102,6 +921,124 @@ function InvoicesPage() {
             </div>
           </Panel>
         </div>
+      </div>
+
+      <div id="invoice-list" className="mt-8 scroll-mt-6">
+        <Panel>
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by client or invoice #..."
+                className="h-10 w-full rounded-2xl border border-hairline bg-white pl-9 pr-4 text-[13px] outline-none transition focus:border-foreground/20"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 rounded-2xl border border-hairline bg-white p-1">
+              {(["all", "Pending", "Paid", "Overdue"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={cn(
+                    "rounded-xl px-3 py-1.5 text-[12px] font-medium transition-colors",
+                    statusFilter === s
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {s === "all" ? "All" : s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {invoiceListQuery.isLoading ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-[13px] text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading invoices...
+            </div>
+          ) : filteredInvoices.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <FileText className="h-9 w-9 text-muted-foreground/40" />
+              <p className="text-[14px] font-medium">
+                {(invoiceListQuery.data ?? []).length === 0
+                  ? "No invoices yet."
+                  : "No invoices match your filters."}
+              </p>
+              <p className="text-[13px] text-muted-foreground">
+                {(invoiceListQuery.data ?? []).length === 0
+                  ? "Fill in the form above to create your first invoice."
+                  : "Try a different search or filter."}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-3xl border border-hairline">
+              <div className="hidden sm:grid sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 bg-surface/70 px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                <span>Invoice #</span>
+                <span>Client</span>
+                <span>Issue date</span>
+                <span>Due date</span>
+                <span>Amount</span>
+                <span>Status</span>
+              </div>
+              <div className="divide-y divide-hairline bg-white">
+                {filteredInvoices.map((inv) => {
+                  const total = computeListTotal(inv);
+                  const curr = (inv.currency as CurrencyCode) || "USD";
+                  return (
+                    <div
+                      key={inv.id}
+                      className="group flex flex-col gap-3 px-4 py-4 sm:grid sm:grid-cols-[auto_1fr_auto_auto_auto_auto] sm:items-center sm:gap-4 cursor-pointer hover:bg-surface/40 transition-colors"
+                    >
+                      <div onClick={() => handleSelectInvoice(inv)} className="font-mono text-[12px] font-medium text-muted-foreground">
+                        {inv.invoice_number || "—"}
+                      </div>
+                      <div onClick={() => handleSelectInvoice(inv)} className="min-w-0">
+                        <div className="truncate text-[14px] font-medium">{inv.client_name || "Unknown"}</div>
+                        <div className="text-[12px] text-muted-foreground sm:hidden">
+                          {inv.payment_status && (
+                            <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium", statusColors[inv.payment_status] ?? "bg-secondary text-foreground")}>
+                              {inv.payment_status}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div onClick={() => handleSelectInvoice(inv)} className="hidden sm:block text-[12px] text-muted-foreground whitespace-nowrap">
+                        {formatDateShort(inv.issue_date)}
+                      </div>
+                      <div onClick={() => handleSelectInvoice(inv)} className="hidden sm:block text-[12px] text-muted-foreground whitespace-nowrap">
+                        {formatDateShort(inv.due_date)}
+                      </div>
+                      <div onClick={() => handleSelectInvoice(inv)} className="text-[13px] font-medium tabular-nums sm:text-right">
+                        {money(total, curr)}
+                      </div>
+                      <div className="flex items-center justify-between sm:justify-end gap-3">
+                        {inv.payment_status && (
+                          <span className={cn("hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium", statusColors[inv.payment_status] ?? "bg-secondary text-foreground")}>
+                            {inv.payment_status}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => handleSelectInvoice(inv)} className="h-8 w-8 inline-flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors" title="Edit">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openDeleteDialog(inv.id, inv.invoice_number || inv.id, inv.client_name || "Unknown"); }}
+                            className="h-8 w-8 inline-flex items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </Panel>
       </div>
 
       <DeleteConfirmDialog

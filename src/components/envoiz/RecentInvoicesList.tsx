@@ -22,6 +22,8 @@ type RecentInvoicesListProps = {
   description?: string;
   /** If provided, shows a "View all" button in the header linking to this route. */
   viewAllHref?: string;
+  /** Optional hash fragment to scroll to after navigation (without the #). */
+  viewAllHash?: string;
 };
 
 export function RecentInvoicesList({
@@ -30,6 +32,7 @@ export function RecentInvoicesList({
   title = "Recent invoices",
   description = "Your most recently saved invoices.",
   viewAllHref,
+  viewAllHash,
 }: RecentInvoicesListProps) {
   const { data: invoices = [], isLoading: loading } = useQuery({
     queryKey: ["recentInvoices", user?.id],
@@ -64,7 +67,7 @@ export function RecentInvoicesList({
         </div>
         {viewAllHref && (
           <Button asChild variant="ghost" size="sm" className="shrink-0 -mr-2">
-            <Link to={viewAllHref} className="flex items-center gap-1.5">
+            <Link to={viewAllHref} hash={viewAllHash} className="flex items-center gap-1.5">
               View all <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Button>
