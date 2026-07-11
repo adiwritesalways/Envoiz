@@ -12,9 +12,6 @@ import {
   writeUserStorageValue,
 } from "@/lib/envoiz";
 
-const DEFAULT_COMPANY_NAME = "Envoiz Studio";
-const DEFAULT_COMPANY_ADDRESS = "Dhanmondi, Dhaka, Bangladesh";
-
 export function CompanyOnboardingWizard() {
   const { user, refreshSession } = useAuth();
   const [open, setOpen] = React.useState(false);
@@ -30,8 +27,6 @@ export function CompanyOnboardingWizard() {
       return;
     }
 
-    // Prefer Supabase metadata (cross-device). Fall back to localStorage for
-    // users who set prefs before metadata storage was introduced.
     const savedCompanyName =
       user.user_metadata?.company_name ||
       readUserStorageValue(user.id, settingsStorageKeys.companyName, "");
@@ -43,9 +38,6 @@ export function CompanyOnboardingWizard() {
     setCompanyAddress(savedCompanyAddress);
     setAvatarUrl(user.user_metadata?.avatar_url);
 
-    // Only show for brand-new accounts — ones that were explicitly stamped with
-    // onboarding_pending at signup time. Existing users logging in will never
-    // have this flag, so the wizard will never appear for them.
     setOpen(user.user_metadata?.onboarding_pending === true);
   }, [user]);
 
@@ -89,23 +81,19 @@ export function CompanyOnboardingWizard() {
 
     setSaving(true);
     try {
-      const finalName = companyName.trim() || DEFAULT_COMPANY_NAME;
-      const finalAddress = companyAddress.trim() || DEFAULT_COMPANY_ADDRESS;
+      const finalName = companyName.trim();
+      const finalAddress = companyAddress.trim();
 
-      // Persist everything to Supabase metadata — cross-device, permanent.
-      // company_name and company_address are stored here so every browser and
-      // device sees the same values without touching localStorage.
       const { error: metaError } = await supabase.auth.updateUser({
         data: {
-          company_name: finalName,
-          company_address: finalAddress,
+          company_name: finalName || null,
+          company_address: finalAddress || null,
           onboarding_pending: null,
           onboarding_complete: true,
         },
       });
       if (metaError) throw metaError;
 
-      // Mirror to localStorage as a same-browser cache.
       writeUserStorageValue(user.id, settingsStorageKeys.companyName, finalName);
       writeUserStorageValue(user.id, settingsStorageKeys.companyAddress, finalAddress);
       writeUserStorageValue(user.id, settingsStorageKeys.onboardingComplete, "true");
@@ -147,16 +135,19 @@ export function CompanyOnboardingWizard() {
               <input
                 value={companyName}
                 onChange={(event) => setCompanyName(event.target.value)}
-                placeholder={DEFAULT_COMPANY_NAME}
+                placeholder="Your company name"
                 className="mt-1.5 h-11 w-full rounded-2xl border border-hairline bg-white px-3 text-[14px] outline-none transition focus:border-foreground/20"
               />
+              <p className="mt-1.5 text-[12px] text-muted-foreground/70">
+                You can update this later in Settings.
+              </p>
             </div>
             <div>
               <label className="text-[12px] text-muted-foreground">Company Address</label>
               <textarea
                 value={companyAddress}
                 onChange={(event) => setCompanyAddress(event.target.value)}
-                placeholder={DEFAULT_COMPANY_ADDRESS}
+                placeholder="Street, city, state, postal code, country"
                 rows={4}
                 className="mt-1.5 w-full resize-none rounded-2xl border border-hairline bg-white px-3 py-3 text-[14px] outline-none transition focus:border-foreground/20"
               />

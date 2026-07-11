@@ -1,0 +1,266 @@
+# Envoiz — Bug Fix & Feature Completion Prompt
+
+You are working on **Envoiz**, a freelance invoice SaaS web app. The stack is:
+- **Framework**: TanStack Start (SSR) + React 19 + TypeScript
+- **Styling**: Tailwind CSS v4 + shadcn/ui components
+- **Backend**: Supabase (Auth + Postgres)
+- **State**: TanStack Query (`useQuery`) for server data, `useAuth()` hook for the current user
+- **Key tables**: `envoiz_invoices` (columns: `id`, `user_id`, `client_name`, `client_email`, `billing_address`, `company_name`, `company_address`, `issue_date`, `due_date`, `status`, `currency`, `discount`, `notes`, `invoice_number`, `total`), `envoiz_invoice_items` (columns: `id`, `invoice_id`, `description`, `quantity`, `unit_price`)
+- **User metadata** (stored in `supabase.auth.updateUser({ data: {...} })`): `company_name`, `company_address`, `avatar_url`, `onboarding_pending`, `onboarding_complete`
+- **localStorage helper**: `readUserStorageValue(userId, key, fallback)` and `writeUserStorageValue(userId, key, value)` from `@/lib/envoiz`
+
+Do NOT touch the following: `src/routes/dashboard/api.tsx`, `src/routes/dashboard/webhooks.tsx`, `src/routes/index.tsx` (landing page), and any files under `src/routes/resources/`.
+
+Fix and implement everything listed below. Do not skip any item. Read the relevant files before editing them.
+
+---
+
+## 1. Auth — Password Reset
+
+**File**: `src/components/auth/AuthForm.tsx`
+
+The login form currently shows a static "Reset password coming soon" placeholder. Replace it with a working flow:
+- Add a "Forgot password?" link/button below the password input on the login tab.
+- Clicking it should show an inline "reset mode" within the same form: an email input and a "Send reset link" button.
+- On submit, call `supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' })`.
+- Show a success message: "Check your email for a reset link."
+- Create `src/routes/reset-password.tsx`: a page that Supabase redirects to after the user clicks the email link. It should detect the `type=recovery` session from the URL hash (Supabase sets this automatically), show a "New password" + "Confirm new password" form, call `supabase.auth.updateUser({ password })` on submit, then redirect to `/dashboard` on success.
+
+---
+
+## 2. Auth — Confirm Password on Signup
+
+**File**: `src/components/auth/AuthForm.tsx`
+
+On the signup tab, add a "Confirm password" input below the password field. Before submitting:
+- Validate that both fields match. If they don't, show an inline error: "Passwords don't match." and block the `signUp` call.
+- Only show this field on the signup tab, not on the login tab.
+
+---
+
+## 3. Onboarding — Remove Silent Defaults
+
+**File**: `src/components/envoiz/CompanyOnboardingWizard.tsx`
+
+Currently, if a user clicks "Finish setup" with empty fields, their company name silently becomes `"Envoiz Studio"` and their address becomes `"Dhanmondi, Dhaka, Bangladesh"`. Remove these hardcoded fallbacks entirely.
+- If `companyName` is empty/whitespace, save it as an empty string (or `null`) — do not substitute a placeholder.
+- Same for `companyAddress`.
+- Optionally add a soft inline hint under the company name field: "You can update this later in Settings."
+
+---
+
+## 4. Dashboard — Time-Aware Greeting
+
+**File**: `src/routes/dashboard/index.tsx`
+
+Replace the hardcoded `"Good morning"` greeting with a time-aware one:
+- 5am–11:59am → "Good morning"
+- 12pm–4:59pm → "Good afternoon"
+- 5pm–8:59pm → "Good evening"
+- 9pm–4:59am → "Good night"
+
+Derive this from `new Date().getHours()` inside a `useMemo` or inline expression.
+
+---
+
+## 5. Dashboard — Empty State with CTA
+
+**File**: `src/routes/dashboard/index.tsx`
+
+When the user has zero invoices, the metrics and chart render empty/zeroed UI with no guidance. Add a proper empty state:
+- When `invoices.length === 0`, show a centered card or section with an icon, the text "No invoices yet", a sub-line "Create your first invoice to start tracking your revenue.", and a primary button "Create Invoice" that navigates to `/dashboard/invoices`.
+- The metrics cards and chart should either be hidden or show the zeroed state with a subtle "—" placeholder rather than raw zeros.
+
+---
+
+## 6. Dashboard — Currency Symbol on Metrics
+
+**File**: `src/routes/dashboard/index.tsx`
+
+The revenue and pending amounts are displayed as plain numbers. Read the user's currency preference (`readUserStorageValue(user.id, settingsStorageKeys.currency, "USD")` or `user.user_metadata.currency`) and prepend the correct symbol (e.g. `$`, `£`, `€`, `৳`) to the metric values. Match whatever currency symbols are already defined in `src/lib/envoiz.ts` or `src/routes/dashboard/settings.tsx`.
+
+---
+
+## 7. Dashboard — Overdue Invoice Callout
+
+**File**: `src/routes/dashboard/index.tsx`
+
+Add a fourth metric card (alongside Revenue, Pending, Invoice Count) that shows the count of **Overdue** invoices. Derive this from the invoice list: `invoices.filter(inv => inv.status === 'overdue').length`. Style it with a red/amber accent color to make it visually distinct. If count is 0, show it in neutral styling.
+
+---
+
+## 8. Invoices — Full Invoice List Page
+
+**File**: `src/routes/dashboard/invoices.tsx`
+
+This is the most critical missing feature. Currently the invoices route opens directly to a blank new-invoice form with no way to view, search, or re-open existing invoices.
+
+Redesign the page as a **two-panel layout**:
+
+**Left/Main panel — Invoice List:**
+- Fetch all invoices for the current user using the existing `fetchInvoices(user.id)` function via `useQuery`.
+- Display them in a table or card list showing: Invoice # , Client Name, Issue Date, Due Date, Amount, Status badge (color-coded: green=Paid, yellow=Pending, red=Overdue).
+- Add a search/filter input at the top to filter by client name or invoice number.
+- Add a status filter (All / Pending / Paid / Overdue).
+- A "New Invoice" primary button opens the invoice form (see panel below).
+- Clicking any invoice row opens the edit form for that invoice.
+- Each row has a delete icon/button (with confirmation modal — see item 9).
+- Show an empty state ("No invoices yet. Create your first one.") when the list is empty.
+
+**Right panel (or full-page modal) — Invoice Form:**
+- When "New Invoice" is clicked, show the existing invoice form (the form fields and live preview that are already built).
+- When an existing invoice is clicked, load its data into the form for editing.
+- "Save" creates or updates the invoice in Supabase.
+- "Cancel" returns to the list view.
+- The split editor+preview layout that already exists should be preserved when the form is open.
+
+Use local state (`selectedInvoiceId`, `isFormOpen`) to track which invoice is being edited. Invalidate the `["invoices", user.id]` query key after save/delete so the list refreshes.
+
+---
+
+## 9. Invoices — Replace `window.confirm()` with Modal
+
+**Files**: `src/routes/dashboard/invoices.tsx` and anywhere else `window.confirm` or `confirm(` is used for invoice deletion.
+
+Replace every `window.confirm()` / `confirm()` delete prompt with a proper shadcn/ui `AlertDialog` confirmation modal. It should show:
+- Title: "Delete Invoice"
+- Body: "This will permanently delete invoice #[number] for [client name]. This action cannot be undone."
+- Two buttons: "Cancel" (outline) and "Delete" (destructive/red variant).
+
+---
+
+## 10. Invoices — Tax/VAT Field
+
+**File**: `src/routes/dashboard/invoices.tsx`
+
+Add an optional **Tax rate (%)** input field to the invoice form, alongside the existing discount field. Default to `0`. 
+- Recalculate totals: `Subtotal → Discount → Tax (on subtotal after discount) → Grand Total`.
+- Display the tax line in the live preview panel.
+- Persist the tax rate in the `envoiz_invoices` table. If the column doesn't exist yet, add it as `tax_rate NUMERIC DEFAULT 0` via a migration comment at the top of the file (e.g. `// MIGRATION NEEDED: ALTER TABLE envoiz_invoices ADD COLUMN IF NOT EXISTS tax_rate NUMERIC DEFAULT 0;`) so the developer knows to run it.
+- Show the tax line in the exported PDF.
+
+---
+
+## 11. Customers — Functional "Add Customer" Button and Detail View
+
+**File**: `src/routes/dashboard/customers.tsx`
+
+**Add Customer button**: Currently has no `onClick`. For now, implement it as: clicking "Add Customer" opens a simple modal with fields for Name and Email. On save, there is no separate customer table yet, so show a toast: "To add a customer, create an invoice for them — they'll appear here automatically." Dismiss the modal. (This is an intentional interim behavior until a proper customer table is added.)
+
+**Customer row click**: Make each customer row clickable. Clicking a customer should expand an inline panel or navigate to a customer detail view showing:
+- Customer name, email.
+- A list of all their invoices (filter from the already-fetched invoice list by matching `client_email`).
+- Total invoiced amount and count.
+- Each invoice in the list is clickable and navigates to `/dashboard/invoices` with that invoice selected/opened.
+
+---
+
+## 12. Settings — Password Change
+
+**File**: `src/routes/dashboard/settings.tsx`
+
+Add a "Change password" section in the settings page (below the profile section):
+- Three fields: Current Password, New Password, Confirm New Password.
+- On save: call `supabase.auth.updateUser({ password: newPassword })`. Supabase handles verification internally.
+- Validate that New Password and Confirm New Password match before submitting.
+- Show success toast "Password updated." or inline error on failure.
+- If the user signed up via OAuth (Google/GitHub) and has no password, show a note: "Your account uses Google/GitHub sign-in. Password login is not available." and hide the form.
+
+---
+
+## 13. Settings — Account Deletion
+
+**File**: `src/routes/dashboard/settings.tsx`
+
+Add a "Danger Zone" section at the bottom of the settings page with a "Delete Account" button (styled red/destructive).
+- Clicking it opens a shadcn/ui `AlertDialog` with: "Are you sure? This will permanently delete your account and all your invoices. Type DELETE to confirm."
+- Include a text input where the user must type `DELETE` exactly before the confirm button becomes enabled.
+- On confirm: 
+  1. Delete all records from `envoiz_invoice_items` where `invoice_id` IN (SELECT id FROM `envoiz_invoices` WHERE `user_id` = current user id).
+  2. Delete all records from `envoiz_invoices` where `user_id` = current user id.
+  3. Call `supabase.auth.admin` is not available client-side, so instead call `supabase.rpc('delete_user')` — add a comment `// MIGRATION NEEDED: Create a Supabase DB function 'delete_user' that calls auth.users delete for the current user` and also call `supabase.auth.signOut()` after, then redirect to `/`.
+
+---
+
+## 14. Mobile Responsiveness — Sidebar Navigation
+
+**File**: `src/components/envoiz/DashboardShell.tsx`
+
+The sidebar is currently a fixed desktop panel with no mobile handling. Add:
+- A hamburger menu button (top-left) visible only on screens below `md` breakpoint (`md:hidden`).
+- Clicking it opens the sidebar as a **slide-over drawer** (overlay panel from the left).
+- An overlay/backdrop behind the drawer that closes it when clicked.
+- The sidebar itself should be hidden on mobile (`hidden md:flex`) in its normal position and only shown via the drawer.
+- Use Tailwind's responsive classes; no new dependencies required. Use shadcn/ui `Sheet` component if it is already in the project, otherwise implement with a simple `div` + transition classes.
+
+---
+
+## 15. Mobile Responsiveness — Invoice Page Layout
+
+**File**: `src/routes/dashboard/invoices.tsx`
+
+The invoice form uses a side-by-side editor+preview layout (`grid-cols-2` or `flex`). On mobile screens this overflows or hides the preview:
+- On `sm` and below: show only the form, hide the live preview panel.
+- Add a "Preview" toggle button (bottom of the form, mobile only) that swaps between showing the form and the live preview. 
+- On `md` and above: restore the existing side-by-side layout unchanged.
+
+---
+
+## 16. Supabase RLS Policies
+
+At the top of whichever file is most appropriate (or create a new file `src/lib/rls-setup.md` or add a comment block to `src/lib/invoices.ts`), include the following SQL migration comment block so the developer knows exactly what to run in the Supabase dashboard:
+
+```sql
+-- REQUIRED: Run these in Supabase SQL Editor to enable Row Level Security.
+-- Without these, any authenticated user can read/edit/delete any other user's invoices.
+
+ALTER TABLE envoiz_invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE envoiz_invoice_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own invoices"
+  ON envoiz_invoices FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own invoices"
+  ON envoiz_invoices FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own invoices"
+  ON envoiz_invoices FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own invoices"
+  ON envoiz_invoices FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view their own invoice items"
+  ON envoiz_invoice_items FOR SELECT
+  USING (invoice_id IN (SELECT id FROM envoiz_invoices WHERE user_id = auth.uid()));
+
+CREATE POLICY "Users can insert their own invoice items"
+  ON envoiz_invoice_items FOR INSERT
+  WITH CHECK (invoice_id IN (SELECT id FROM envoiz_invoices WHERE user_id = auth.uid()));
+
+CREATE POLICY "Users can update their own invoice items"
+  ON envoiz_invoice_items FOR UPDATE
+  USING (invoice_id IN (SELECT id FROM envoiz_invoices WHERE user_id = auth.uid()));
+
+CREATE POLICY "Users can delete their own invoice items"
+  ON envoiz_invoice_items FOR DELETE
+  USING (invoice_id IN (SELECT id FROM envoiz_invoices WHERE user_id = auth.uid()));
+```
+
+---
+
+## 17. Remove Dead Code
+
+- `src/components/envoiz/CreateInvoiceModal.tsx` is an unconnected duplicate of the invoice form with no backend integration. **Delete this file** and remove any import of it from other files.
+- In `package.json`, remove the `ws` and `@types/ws` packages (they were installed but never used). Run `npm uninstall ws @types/ws`.
+
+---
+
+## General Rules
+
+- Do not introduce new dependencies unless strictly necessary. Prefer shadcn/ui components already in the project.
+- Keep all Supabase calls within existing patterns: `supabase.from(...)`, `supabase.auth.updateUser(...)`, etc.
+- Invalidate TanStack Query cache with `queryClient.invalidateQueries({ queryKey: ["invoices", user.id] })` after any mutation.
+- After any `supabase.auth.updateUser(...)` call that changes metadata, call `refreshSession()` from `useAuth()` to sync the context.
+- Show loading spinners and error toasts consistently with the existing pattern in the codebase.
+- Maintain the existing Tailwind + shadcn/ui visual language throughout — do not introduce new color schemes or component styles.
+- After completing all changes, verify the app builds without TypeScript errors (`npm run build` or `tsc --noEmit`).

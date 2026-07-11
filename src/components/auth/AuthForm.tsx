@@ -15,11 +15,16 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthProvider, setOauthProvider] = useState<"google" | "github" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<ReactNode>(null);
+
+  const [resetMode, setResetMode] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,6 +34,11 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === "signup") {
+        if (password !== confirmPassword) {
+          setError("Passwords don't match.");
+          return;
+        }
+
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -36,9 +46,6 @@ export function AuthForm({ mode }: AuthFormProps) {
             emailRedirectTo: oauthRedirectTo,
             data: {
               full_name: fullName,
-              // Stamp new accounts so the onboarding wizard knows to appear.
-              // Supabase does NOT apply this metadata to existing accounts on a
-              // duplicate signUp call, so returning users are never affected.
               onboarding_pending: true,
             },
           },
@@ -48,7 +55,6 @@ export function AuthForm({ mode }: AuthFormProps) {
           throw signUpError;
         }
 
-        // identities is empty when the email already belongs to an existing account.
         const isNewAccount = (data.user?.identities?.length ?? 0) > 0;
         if (!isNewAccount) {
           setInfo(
@@ -77,11 +83,6 @@ export function AuthForm({ mode }: AuthFormProps) {
       });
 
       if (signInError) {
-        // "Invalid login credentials" is Supabase's catch-all for both wrong
-        // password AND non-existent email. Try signing the user up — if the
-        // account is genuinely new (identities.length > 0) we create it and
-        // send them to onboarding. If identities is empty the email exists but
-        // the password is wrong, so we surface a clearer message.
         if (signInError.message.toLowerCase().includes("invalid login credentials")) {
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email,
@@ -97,11 +98,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           const isNewAccount = (signUpData.user?.identities?.length ?? 0) > 0;
 
           if (!isNewAccount) {
-            // Account exists — password was just wrong
             throw new Error("Incorrect password. Please try again.");
           }
 
-          // Brand-new account created from the login page
           if (signUpData.session) {
             await navigate({ to: "/dashboard" });
             return;
@@ -119,6 +118,28 @@ export function AuthForm({ mode }: AuthFormProps) {
       setError(authError instanceof Error ? authError.message : "Authentication failed.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onResetSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/reset-password`
+          : "/reset-password";
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo,
+      });
+      if (resetError) throw resetError;
+      setInfo("Check your email for a reset link.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send reset link.");
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -149,6 +170,64 @@ export function AuthForm({ mode }: AuthFormProps) {
   };
 
   const isBusy = loading || oauthProvider !== null;
+
+  if (mode === "login" && resetMode) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-[15px] font-semibold">Reset your password</h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Enter your email and we'll send you a reset link.
+          </p>
+        </div>
+        <form onSubmit={onResetSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="resetEmail" className="text-[12.5px] font-medium text-foreground">
+              Email
+            </label>
+            <input
+              id="resetEmail"
+              type="email"
+              required
+              autoComplete="email"
+              value={resetEmail}
+              onChange={(event) => setResetEmail(event.target.value)}
+              placeholder="you@company.com"
+              className="w-full h-11 px-3.5 rounded-lg bg-white border border-hairline text-[14px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/30 transition"
+            />
+          </div>
+
+          {(error || info) && (
+            <div
+              className={`rounded-2xl border px-4 py-3 text-[13px] leading-relaxed ${
+                error
+                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              }`}
+            >
+              {error ?? info}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={resetLoading}
+            className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-black text-white text-[14px] font-medium hover:bg-black/85 active:bg-black transition-colors shadow-[0_8px_24px_rgba(0,0,0,0.18)] disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send reset link"}
+          </button>
+        </form>
+
+        <button
+          type="button"
+          onClick={() => { setResetMode(false); setError(null); setInfo(null); }}
+          className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← Back to sign in
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -191,9 +270,6 @@ export function AuthForm({ mode }: AuthFormProps) {
             <label htmlFor="password" className="text-[12.5px] font-medium text-foreground">
               Password
             </label>
-            {mode === "login" && (
-              <span className="text-[12px] text-muted-foreground">Reset password coming soon</span>
-            )}
           </div>
           <div className="relative">
             <input
@@ -216,7 +292,37 @@ export function AuthForm({ mode }: AuthFormProps) {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          {mode === "login" && (
+            <button
+              type="button"
+              onClick={() => { setResetMode(true); setError(null); setInfo(null); }}
+              className="text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Forgot password?
+            </button>
+          )}
         </div>
+
+        {mode === "signup" && (
+          <div className="space-y-1.5">
+            <label htmlFor="confirmPassword" className="text-[12.5px] font-medium text-foreground">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <input
+                id="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="Re-enter your password"
+                className="w-full h-11 pl-3.5 pr-10 rounded-lg bg-white border border-hairline text-[14px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/30 transition"
+              />
+            </div>
+          </div>
+        )}
 
         {(error || info) && (
           <div

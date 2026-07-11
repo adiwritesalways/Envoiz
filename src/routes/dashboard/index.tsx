@@ -11,10 +11,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowDownRight, ArrowUpRight, Calendar, ChevronDown, Download, Plus } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Calendar, ChevronDown, Download, FileText, Plus } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { RecentInvoicesList } from "@/components/envoiz/RecentInvoicesList";
+import { DashboardShell } from "@/components/envoiz/DashboardShell";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { fetchInvoices } from "@/lib/invoices";
@@ -36,37 +37,57 @@ export const Route = createFileRoute("/dashboard/")({
 function generateRevenueData(invoices: any[]) {
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const currentYear = new Date().getFullYear();
-  
-  const data = months.map(m => ({ m, current: 0, previous: 0 }));
-  
-  invoices.forEach(inv => {
+
+  const data = months.map((m) => ({ m, current: 0, previous: 0 }));
+
+  invoices.forEach((inv) => {
     if (inv.status !== "Paid") return;
     const date = new Date(inv.createdAt);
     if (date.getFullYear() === currentYear) {
-      const monthIndex = date.getMonth();
-      data[monthIndex].current += inv.total;
+      data[date.getMonth()].current += inv.total;
     } else if (date.getFullYear() === currentYear - 1) {
-      const monthIndex = date.getMonth();
-      data[monthIndex].previous += inv.total;
+      data[date.getMonth()].previous += inv.total;
     }
   });
-  
+
   return data;
+}
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "Good morning";
+  if (hour >= 12 && hour < 17) return "Good afternoon";
+  if (hour >= 17 && hour < 21) return "Good evening";
+  return "Good night";
+}
+
+function formatMoney(value: number, currencyCode: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currencyCode,
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    return `${currencyCode} ${value.toLocaleString()}`;
+  }
 }
 
 function DashboardOverview() {
   const { user } = useAuth();
-  
-  // Reactive state so the greeting updates the moment metadata or localStorage
-  // changes (e.g. after the DashboardShell auto-migration refreshes the session).
+
   const [companyName, setCompanyName] = React.useState("");
+  const [currency, setCurrency] = React.useState("USD");
+
   React.useEffect(() => {
     const name =
       user?.user_metadata?.company_name ||
       readUserStorageValue(user?.id, settingsStorageKeys.companyName, "");
     setCompanyName(name);
+    const curr = readUserStorageValue(user?.id, settingsStorageKeys.defaultCurrency, "USD");
+    setCurrency(curr);
   }, [user?.user_metadata?.company_name, user?.id]);
-  
+
   const invoicesQuery = useQuery({
     queryKey: ["invoices", user?.id],
     queryFn: () => fetchInvoices(user?.id ?? ""),
@@ -75,81 +96,141 @@ function DashboardOverview() {
 
   const invoices = invoicesQuery.data ?? [];
   const revenueData = React.useMemo(() => generateRevenueData(invoices), [invoices]);
-  
-  const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.status === "Paid" ? inv.total : 0), 0);
-  const totalOutstanding = invoices.reduce((sum, inv) => sum + (inv.status === "Pending" ? inv.total : 0), 0);
+  const greeting = React.useMemo(() => getTimeGreeting(), []);
+
+  const totalRevenue = invoices.reduce(
+    (sum, inv) => sum + (inv.status === "Paid" ? inv.total : 0),
+    0,
+  );
+  const totalOutstanding = invoices.reduce(
+    (sum, inv) => sum + (inv.status === "Pending" ? inv.total : 0),
+    0,
+  );
+  const overdueCount = invoices.filter((inv) => (inv.status as string) === "Overdue").length;
   const uniqueClients = new Set(invoices.map((inv: any) => inv.clientEmail)).size;
-  
+
+  const hasInvoices = invoices.length > 0;
+
   const dynamicMetrics = [
-    { label: "Total revenue", value: `$${totalRevenue.toLocaleString()}` },
-    { label: "Pending", value: `$${totalOutstanding.toLocaleString()}` },
-    { label: "Invoices", value: invoices.length.toLocaleString() },
-    { label: "Clients", value: uniqueClients.toLocaleString() },
+    { label: "Total revenue", value: hasInvoices ? formatMoney(totalRevenue, currency) : "—" },
+    { label: "Pending", value: hasInvoices ? formatMoney(totalOutstanding, currency) : "—" },
+    { label: "Invoices", value: hasInvoices ? invoices.length.toLocaleString() : "—" },
+    {
+      label: "Overdue",
+      value: hasInvoices ? overdueCount.toLocaleString() : "—",
+      accent: overdueCount > 0 ? "overdue" : undefined,
+    },
+    { label: "Clients", value: hasInvoices ? uniqueClients.toLocaleString() : "—" },
   ];
 
   return (
+    <DashboardShell>
     <div className="space-y-6">
-      {/* Greeting */}
       <header className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Good morning
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-              Here's how {companyName || "your business"} is doing today.
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Calendar className="h-3.5 w-3.5" /> Last 12 months
-              <ChevronDown className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-3.5 w-3.5" /> Export
-            </Button>
-            <Button asChild size="sm">
-              <Link to="/dashboard/invoices">
-                <Plus className="h-3.5 w-3.5" /> Create invoice
-              </Link>
-            </Button>
-          </div>
-        </header>
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{greeting}</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+            Here's how {companyName || "your business"} is doing today.
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <Calendar className="h-3.5 w-3.5" /> Last 12 months
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-3.5 w-3.5" /> Export
+          </Button>
+          <Button asChild size="sm">
+            <Link to="/dashboard/invoices">
+              <Plus className="h-3.5 w-3.5" /> Create invoice
+            </Link>
+          </Button>
+        </div>
+      </header>
 
-        {/* Metric cards */}
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {dynamicMetrics.map((m) => (
-            <Card key={m.label} className="border-border bg-card p-5 shadow-none flex flex-col justify-between">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                {m.label}
-              </div>
-              <div className="mt-2 font-mono text-2xl font-semibold tabular-nums tracking-tight">
-                {m.value}
-              </div>
-            </Card>
-          ))}
-        </section>
+      {!hasInvoices && !invoicesQuery.isLoading ? (
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-hairline bg-surface/40 py-16 text-center">
+          <FileText className="h-10 w-10 text-muted-foreground/40" />
+          <h2 className="mt-4 text-[16px] font-semibold">No invoices yet</h2>
+          <p className="mt-2 max-w-sm text-[13px] text-muted-foreground">
+            Create your first invoice to start tracking your revenue.
+          </p>
+          <Button asChild size="sm" className="mt-6">
+            <Link to="/dashboard/invoices">
+              <Plus className="h-3.5 w-3.5" /> Create Invoice
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <>
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {dynamicMetrics.map((m) => (
+              <Card
+                key={m.label}
+                className={cn(
+                  "border-border bg-card p-5 shadow-none flex flex-col justify-between",
+                  m.accent === "overdue" && overdueCount > 0 &&
+                    "border-red-200 bg-red-50/50",
+                )}
+              >
+                <div
+                  className={cn(
+                    "text-[11px] uppercase tracking-[0.18em] text-muted-foreground",
+                    m.accent === "overdue" && overdueCount > 0 && "text-red-500",
+                  )}
+                >
+                  {m.label}
+                </div>
+                <div
+                  className={cn(
+                    "mt-2 font-mono text-2xl font-semibold tabular-nums tracking-tight",
+                    m.accent === "overdue" && overdueCount > 0 && "text-red-600",
+                  )}
+                >
+                  {m.value}
+                </div>
+              </Card>
+            ))}
+          </section>
 
-        {/* Chart */}
-        <RevenueChart revenueData={revenueData} />
+          <RevenueChart revenueData={revenueData} currency={currency} />
 
-        {/* Bottom row */}
-        <section className="grid grid-cols-1 gap-4">
-          <RecentInvoicesList
-            user={user}
-            title="Recent invoices"
-            description="The latest invoices across all customers."
-            viewAllHref="/dashboard/invoices"
-          />
-        </section>
+          <section className="grid grid-cols-1 gap-4">
+            <RecentInvoicesList
+              user={user}
+              title="Recent invoices"
+              description="The latest invoices across all customers."
+              viewAllHref="/dashboard/invoices"
+            />
+          </section>
+        </>
+      )}
     </div>
+    </DashboardShell>
   );
 }
 
-function RevenueChart({ revenueData }: { revenueData: any[] }) {
-  const [range, setRange] = React.useState<"3M" | "6M" | "12M" | "YTD">("12M");
+type RevenueChartProps = { revenueData: any[]; currency: string };
+function RevenueChart({ revenueData, currency }: RevenueChartProps) {
+  type RangeKey = "3M" | "6M" | "12M" | "YTD";
+  const [range, setRange] = React.useState("12M" as RangeKey);
 
   const total = revenueData.reduce((a, b) => a + b.current, 0);
   const totalPrevious = revenueData.reduce((a, b) => a + b.previous, 0);
+
+  const formatTick = (v: number) => {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 0,
+        notation: "compact",
+      }).format(v);
+    } catch {
+      return `${(v / 1000).toFixed(0)}k`;
+    }
+  };
 
   return (
     <Card className="border-border bg-card p-5 shadow-none">
@@ -160,18 +241,22 @@ function RevenueChart({ revenueData }: { revenueData: any[] }) {
           </div>
           <div className="mt-1 flex items-baseline gap-3">
             <div className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
-              ${total.toLocaleString()}
+              {formatMoney(total, currency)}
             </div>
             {totalPrevious > 0 && (
               <span className="inline-flex items-center gap-0.5 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium">
-                {total >= totalPrevious ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {total >= totalPrevious ? (
+                  <ArrowUpRight className="h-3 w-3" />
+                ) : (
+                  <ArrowDownRight className="h-3 w-3" />
+                )}
                 {(((total - totalPrevious) / totalPrevious) * 100).toFixed(1)}%
               </span>
             )}
           </div>
           {totalPrevious > 0 && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Compared to ${totalPrevious.toLocaleString()} previous period
+              Compared to {formatMoney(totalPrevious, currency)} previous period
             </p>
           )}
         </div>
@@ -216,14 +301,11 @@ function RevenueChart({ revenueData }: { revenueData: any[] }) {
               tickLine={false}
               axisLine={false}
               fontSize={11}
-              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+              tickFormatter={formatTick}
             />
             <Tooltip
-              cursor={{
-                stroke: "var(--color-foreground)",
-                strokeDasharray: "2 4",
-              }}
-              content={<ChartTooltip />}
+              cursor={{ stroke: "var(--color-foreground)", strokeDasharray: "2 4" }}
+              content={<ChartTooltip currency={currency} />}
             />
             <Area
               type="monotone"
@@ -269,10 +351,12 @@ function ChartTooltip({
   active,
   payload,
   label,
+  currency,
 }: {
   active?: boolean;
   payload?: Array<{ value: number; dataKey: string }>;
   label?: string;
+  currency: string;
 }) {
   if (!active || !payload?.length) return null;
   const current = payload.find((p) => p.dataKey === "current")?.value ?? 0;
@@ -282,11 +366,11 @@ function ChartTooltip({
       <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
       <div className="mt-1 flex items-center justify-between gap-6">
         <span className="text-muted-foreground">This year</span>
-        <span className="font-mono tabular-nums">${current.toLocaleString()}</span>
+        <span className="font-mono tabular-nums">{formatMoney(current, currency)}</span>
       </div>
       <div className="flex items-center justify-between gap-6">
         <span className="text-muted-foreground">Previous</span>
-        <span className="font-mono tabular-nums">${previous.toLocaleString()}</span>
+        <span className="font-mono tabular-nums">{formatMoney(previous, currency)}</span>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, Users, Code, Webhook, Settings, Search } from "lucide-react";
+import { LayoutDashboard, FileText, Users, Code, Webhook, Settings, Search, Menu, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { readUserStorageValue, settingsStorageKeys } from "@/lib/envoiz";
 
-// Navigation items
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", to: "/dashboard" },
   { icon: FileText, label: "Invoices", to: "/dashboard/invoices" },
@@ -28,10 +27,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // One-time migration: if company prefs exist in localStorage but not yet in
-  // Supabase metadata (users who set up before the metadata feature was added),
-  // push them silently so every browser sees the same values going forward.
   useEffect(() => {
     if (!user?.id || user.user_metadata?.company_name) return;
     const localName    = readUserStorageValue(user.id, settingsStorageKeys.companyName,    "");
@@ -42,8 +39,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       .then(({ error }) => { if (!error) void refreshSession(); });
   }, [user?.id]);
 
-  // Manual active detection — more reliable than activeProps during SSR hydration.
-  // Overview uses exact match; all other pages use startsWith.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   const isActive = (to: string) =>
     to === "/dashboard"
       ? pathname === "/dashboard" || pathname === "/dashboard/"
@@ -93,71 +92,108 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const initials = name.substring(0, 2).toUpperCase();
   const avatarUrl = user?.user_metadata?.avatar_url;
 
+  const sidebarContent = (
+    <>
+      <div className="p-6 flex items-center justify-between">
+        <Link to="/" className="hover:opacity-80 transition-opacity" onClick={() => setMobileMenuOpen(false)}>
+          <BrandLogo className="h-12 w-auto" />
+        </Link>
+        <button
+          className="md:hidden p-1 rounded-md text-muted-foreground hover:text-foreground"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="px-4 pb-4">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search..."
+            className="w-full bg-background pl-8 pr-12 rounded-md h-9 shadow-sm"
+          />
+          <div className="absolute right-1.5 top-1.5 flex h-6 items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘K</span>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-4 space-y-1">
+        {navItems.map((item) => (
+          <Link
+            key={item.label}
+            to={item.to}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              isActive(item.to)
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+
+      <div className="p-4 mt-auto">
+        <Card className="shadow-sm border-primary/20 bg-primary/5">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-sm font-semibold">Upgrade your plan</CardTitle>
+            <CardDescription className="text-xs">
+              Unlock advanced invoicing features and API limits.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <Button className="w-full text-xs h-8" variant="default">
+              Upgrade Now
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-background">
       <CompanyOnboardingWizard />
-      {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 flex flex-col border-r border-border bg-muted/20">
-        <div className="p-6 flex items-center">
-          <Link to="/" className="hover:opacity-80 transition-opacity">
-            <BrandLogo className="h-12 w-auto" />
-          </Link>
-        </div>
 
-        <div className="px-4 pb-4">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search..."
-              className="w-full bg-background pl-8 pr-12 rounded-md h-9 shadow-sm"
-            />
-            <div className="absolute right-1.5 top-1.5 flex h-6 items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-              <span className="text-xs">⌘K</span>
-            </div>
-          </div>
-        </div>
+      {/* Mobile overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
-        <nav className="flex-1 overflow-y-auto px-4 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.to}
-              className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                isActive(item.to)
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+      {/* Sidebar — hidden on mobile, shown via drawer */}
+      <aside className="hidden md:flex w-64 flex-shrink-0 flex-col border-r border-border bg-muted/20">
+        {sidebarContent}
+      </aside>
 
-        <div className="p-4 mt-auto">
-          <Card className="shadow-sm border-primary/20 bg-primary/5">
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-sm font-semibold">Upgrade your plan</CardTitle>
-              <CardDescription className="text-xs">
-                Unlock advanced invoicing features and API limits.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <Button className="w-full text-xs h-8" variant="default">
-                Upgrade Now
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Mobile slide-over drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-muted/20 transition-transform duration-300 md:hidden ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {sidebarContent}
       </aside>
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         {/* Header */}
-        <header className="h-14 flex-shrink-0 flex items-center justify-between border-b border-border px-6 bg-background">
-          <div className="flex items-center text-sm font-medium text-muted-foreground">
-            {currentPageLabel}
+        <header className="h-14 flex-shrink-0 flex items-center justify-between border-b border-border px-4 md:px-6 bg-background">
+          <div className="flex items-center gap-3">
+            <button
+              className="md:hidden p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div className="text-sm font-medium text-muted-foreground">{currentPageLabel}</div>
           </div>
           <div className="flex items-center gap-4">
             <input
@@ -182,7 +218,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto px-5 py-6 lg:px-8 lg:py-8 xl:px-10">
+        <div className="flex-1 overflow-auto px-4 py-5 md:px-5 md:py-6 lg:px-8 lg:py-8 xl:px-10">
           <div className="mx-auto w-full max-w-[1760px]">{children}</div>
         </div>
       </main>
