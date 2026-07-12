@@ -229,8 +229,10 @@ function InvoicesPage() {
   }, [user?.id, editingInvoiceId, loadNextInvoiceNumber]);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.hash === "#invoice-list") {
-      setTimeout(() => scrollToInvoiceList(), 300);
+    const target = sessionStorage.getItem("envoiz-scroll-to");
+    if (target === "invoice-list") {
+      sessionStorage.removeItem("envoiz-scroll-to");
+      setTimeout(() => scrollToInvoiceList(), 400);
     }
   }, []);
 
@@ -936,7 +938,11 @@ function InvoicesPage() {
         </div>
       </div>
 
-      <div id="invoice-list" className="mt-8 scroll-mt-6">
+      <div id="invoice-list" className="mt-10">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold tracking-[-0.03em]">All invoices</h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">Browse, filter, and manage every invoice you've created.</p>
+        </div>
         <Panel>
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[200px]">

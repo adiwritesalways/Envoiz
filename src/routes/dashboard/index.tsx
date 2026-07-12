@@ -187,7 +187,7 @@ function DashboardOverview() {
           title="Recent invoices"
           description="The latest invoices across all customers."
           viewAllHref="/dashboard/invoices"
-          viewAllHash="invoice-list"
+          viewAllScrollTo="invoice-list"
         />
       </section>
     </div>
