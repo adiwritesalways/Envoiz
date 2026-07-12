@@ -15,7 +15,6 @@ import { ArrowDownRight, ArrowUpRight, Calendar, ChevronDown, Download, FileText
 import { useAuth } from "@/components/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { RecentInvoicesList } from "@/components/envoiz/RecentInvoicesList";
-import { DashboardShell } from "@/components/envoiz/DashboardShell";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { fetchInvoices } from "@/lib/invoices";
@@ -124,7 +123,6 @@ function DashboardOverview() {
   ];
 
   return (
-    <DashboardShell>
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -191,7 +189,6 @@ function DashboardOverview() {
         />
       </section>
     </div>
-    </DashboardShell>
   );
 }
 

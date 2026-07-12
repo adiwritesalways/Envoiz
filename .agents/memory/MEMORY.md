@@ -1,1 +1,2 @@
 - [Replit Envoiz setup quirks](envoiz-replit-setup.md) — IPv6 + port + Node 20 WebSocket fixes needed to run this app on Replit
+- [Double DashboardShell bug](double-dashboard-shell.md) — every dashboard route had two nested fixed inset-0 shells causing scroll/blank-page bugs

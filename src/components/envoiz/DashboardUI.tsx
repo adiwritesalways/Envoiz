@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { DashboardShell } from "./DashboardShell";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -20,25 +19,23 @@ export function DashboardPage({
   children,
 }: DashboardPageProps) {
   return (
-    <DashboardShell>
-      <div className="space-y-7">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-              {eyebrow}
+    <div className="space-y-7">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+            {eyebrow}
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{title}</h1>
+          {description && (
+            <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
+              {description}
             </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{title}</h1>
-            {description && (
-              <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-                {description}
-              </p>
-            )}
-          </div>
-          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+          )}
         </div>
-        {children}
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-    </DashboardShell>
+      {children}
+    </div>
   );
 }
 
