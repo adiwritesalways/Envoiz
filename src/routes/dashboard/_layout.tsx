@@ -25,7 +25,7 @@ function DashboardLayout() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="rounded-3xl border border-hairline bg-white px-5 py-4 text-[13px] text-muted-foreground shadow-[0_18px_50px_rgba(0,0,0,0.06)]">
+        <div className="rounded-3xl border border-[#1f1f1f] bg-[#0d0d0d] px-5 py-4 text-[13px] text-muted-foreground">
           Restoring your session...
         </div>
       </div>

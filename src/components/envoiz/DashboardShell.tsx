@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, Users, Code, Webhook, Settings, Search, Menu, X } from "lucide-react";
+import { LayoutDashboard, FileText, Users, Settings, Search, Menu, X, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,16 +9,16 @@ import { useAuth } from "@/components/auth/auth-context";
 import { supabase } from "@/lib/supabase";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CompanyOnboardingWizard } from "@/components/envoiz/CompanyOnboardingWizard";
+import { UpgradeModal } from "@/components/envoiz/UpgradeModal";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { readUserStorageValue, settingsStorageKeys } from "@/lib/envoiz";
+import { checkIsPro } from "@/lib/invoices";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", to: "/dashboard" },
   { icon: FileText, label: "Invoices", to: "/dashboard/invoices" },
   { icon: Users, label: "Customers", to: "/dashboard/customers" },
-  { icon: Code, label: "API", to: "/dashboard/api" },
-  { icon: Webhook, label: "Webhooks", to: "/dashboard/webhooks" },
   { icon: Settings, label: "Settings", to: "/dashboard/settings" },
 ];
 
@@ -28,6 +28,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const isPro = checkIsPro(user);
 
   useEffect(() => {
     if (!user?.id || user.user_metadata?.company_name) return;
@@ -96,10 +98,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <>
       <div className="p-6 flex items-center justify-between">
         <Link to="/" className="hover:opacity-80 transition-opacity" onClick={() => setMobileMenuOpen(false)}>
-          <BrandLogo className="h-12 w-auto" />
+          <BrandLogo className="h-12 w-auto invert" />
         </Link>
         <button
-          className="md:hidden p-1 rounded-md text-muted-foreground hover:text-foreground"
+          className="md:hidden p-1 rounded-md text-[#888888] hover:text-white"
           onClick={() => setMobileMenuOpen(false)}
         >
           <X className="h-5 w-5" />
@@ -108,13 +110,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <div className="px-4 pb-4">
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-500" />
           <Input
             type="search"
             placeholder="Search..."
-            className="w-full bg-background pl-8 pr-12 rounded-md h-9 shadow-sm"
+            className="w-full bg-[#121212] border-[#222222] pl-8 pr-12 rounded-md h-9 text-xs text-white placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-neutral-500 focus-visible:ring-offset-0"
           />
-          <div className="absolute right-1.5 top-1.5 flex h-6 items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+          <div className="absolute right-1.5 top-1.5 flex h-6 items-center rounded border border-[#222222] bg-[#121212] px-1.5 font-mono text-[10px] font-medium text-neutral-500 opacity-100">
             <span className="text-xs">⌘K</span>
           </div>
         </div>
@@ -127,8 +129,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             to={item.to}
             className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
               isActive(item.to)
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-[#141414] text-white border border-[#222222]"
+                : "text-neutral-400 hover:bg-white/5 hover:text-white"
             }`}
           >
             <item.icon className="h-4 w-4" />
@@ -138,43 +140,58 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </nav>
 
       <div className="p-4 mt-auto">
-        <Card className="shadow-sm border-primary/20 bg-primary/5">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-sm font-semibold">Upgrade your plan</CardTitle>
-            <CardDescription className="text-xs">
-              Unlock advanced invoicing features and API limits.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <Button className="w-full text-xs h-8" variant="default">
-              Upgrade Now
-            </Button>
-          </CardContent>
-        </Card>
+        {isPro ? (
+          <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
+            <Sparkles className="h-4 w-4 text-emerald-400 shrink-0" />
+            <div>
+              <div className="text-[12px] font-semibold text-emerald-400">Pro Plan</div>
+              <div className="text-[11px] text-emerald-400/60">All features unlocked</div>
+            </div>
+          </div>
+        ) : (
+          <Card className="shadow-none border-[#1F1F1F] bg-[#121212]">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-sm font-semibold text-white">Upgrade your plan</CardTitle>
+              <CardDescription className="text-xs text-neutral-400">
+                Unlock advanced invoicing features and customizations.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <Button
+                onClick={() => setIsUpgradeModalOpen(true)}
+                className="w-full text-xs h-8 bg-[#e0e0e0] text-black hover:bg-[#cccccc] font-medium border-0"
+                variant="default"
+              >
+                Upgrade Now
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </>
   );
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-background">
+    <div className="fixed inset-0 flex overflow-hidden bg-[#050505] text-[#F5F5F5]">
       <CompanyOnboardingWizard />
+      <UpgradeModal open={isUpgradeModalOpen} onOpenChange={setIsUpgradeModalOpen} />
 
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Sidebar — hidden on mobile, shown via drawer */}
-      <aside className="hidden md:flex w-64 flex-shrink-0 flex-col border-r border-border bg-muted/20">
+      <aside className="hidden md:flex w-64 flex-shrink-0 flex-col border-r border-[#1F1F1F] bg-[#0D0D0D]">
         {sidebarContent}
       </aside>
 
       {/* Mobile slide-over drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-muted/20 transition-transform duration-300 md:hidden ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-[#1F1F1F] bg-[#0D0D0D] transition-transform duration-300 md:hidden ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -184,16 +201,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         {/* Header */}
-        <header className="h-14 flex-shrink-0 flex items-center justify-between border-b border-border px-4 md:px-6 bg-background">
+        <header className="h-14 flex-shrink-0 flex items-center justify-between border-b border-[#1F1F1F] px-4 md:px-6 bg-[#050505]">
           <div className="flex items-center gap-3">
             <button
-              className="md:hidden p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="md:hidden p-1.5 rounded-md text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open navigation menu"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="text-sm font-medium text-muted-foreground">{currentPageLabel}</div>
+            <div className="text-sm font-medium text-neutral-400">{currentPageLabel}</div>
           </div>
           <div className="flex items-center gap-4">
             <input
@@ -210,7 +227,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               title="Click to change profile picture"
             >
               <AvatarImage src={avatarUrl} />
-              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+              <AvatarFallback className="bg-neutral-800 text-white text-xs font-semibold">
                 {initials}
               </AvatarFallback>
             </Avatar>

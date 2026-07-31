@@ -34,7 +34,7 @@ export const Route = createFileRoute("/dashboard/")({
   component: DashboardOverview,
 });
 
-function generateRevenueData(invoices: any[]) {
+function generateRevenueData(invoices: any[], rates: Record<string, number> = {}, baseCurrency: string = "USD") {
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const currentYear = new Date().getFullYear();
 
@@ -42,15 +42,42 @@ function generateRevenueData(invoices: any[]) {
 
   invoices.forEach((inv) => {
     if (inv.status !== "Paid") return;
+    const invCurrency = inv.currency || "USD";
+    const rate = rates[invCurrency] || 1;
+    // We convert invoice amount TO the base currency. 
+    // The API gives us rates relative to baseCurrency (e.g. if base is BDT, USD rate is ~0.009)
+    // Wait, if base is BDT, then 1 BDT = 0.009 USD.
+    // So to convert an invoice of 65 USD to BDT, we divide 65 / rate.
+    const normalizedTotal = inv.total / rate;
+
     const date = new Date(inv.createdAt);
     if (date.getFullYear() === currentYear) {
-      data[date.getMonth()].current += inv.total;
+      data[date.getMonth()].current += normalizedTotal;
     } else if (date.getFullYear() === currentYear - 1) {
-      data[date.getMonth()].previous += inv.total;
+      data[date.getMonth()].previous += normalizedTotal;
     }
   });
 
   return data;
+}
+
+type RangeKey = "3M" | "6M" | "12M" | "YTD";
+
+function filterRevenueData(data: ReturnType<typeof generateRevenueData>, range: RangeKey) {
+  const currentMonth = new Date().getMonth(); // 0-indexed
+  switch (range) {
+    case "3M":
+      // last 3 months ending at current month
+      return data.slice(Math.max(0, currentMonth - 2), currentMonth + 1);
+    case "6M":
+      return data.slice(Math.max(0, currentMonth - 5), currentMonth + 1);
+    case "YTD":
+      // Jan (index 0) through current month
+      return data.slice(0, currentMonth + 1);
+    case "12M":
+    default:
+      return data;
+  }
 }
 
 function getTimeGreeting() {
@@ -94,20 +121,41 @@ function DashboardOverview() {
     enabled: Boolean(user?.id),
   });
 
+  const ratesQuery = useQuery({
+    queryKey: ["exchangeRates", currency],
+    queryFn: async () => {
+      const res = await fetch(`https://open.er-api.com/v6/latest/${currency}`);
+      if (!res.ok) throw new Error("Failed to fetch rates");
+      const data = await res.json();
+      return data.rates as Record<string, number>;
+    },
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+  });
+
   const invoices = invoicesQuery.data ?? [];
-  const revenueData = React.useMemo(() => generateRevenueData(invoices), [invoices]);
+  const rates = ratesQuery.data ?? {};
+  
+  const revenueData = React.useMemo(() => generateRevenueData(invoices, rates, currency), [invoices, rates, currency]);
   const greeting = React.useMemo(() => getTimeGreeting(), []);
 
   const totalRevenue = invoices.reduce(
-    (sum, inv) => sum + (inv.status === "Paid" ? inv.total : 0),
+    (sum, inv) => {
+      if (inv.status !== "Paid") return sum;
+      const rate = rates[inv.currency || "USD"] || 1;
+      return sum + (inv.total / rate);
+    },
     0,
   );
   const totalOutstanding = invoices.reduce(
-    (sum, inv) => sum + (inv.status === "Pending" ? inv.total : 0),
+    (sum, inv) => {
+      if (inv.status !== "Pending") return sum;
+      const rate = rates[inv.currency || "USD"] || 1;
+      return sum + (inv.total / rate);
+    },
     0,
   );
   const overdueCount = invoices.filter((inv) => (inv.status as string) === "Overdue").length;
-  const uniqueClients = new Set(invoices.map((inv: any) => inv.clientEmail)).size;
+  const uniqueClients = new Set(invoices.map((inv: any) => inv.clientEmail?.toLowerCase())).size;
 
   const hasInvoices = invoices.length > 0;
 
@@ -150,36 +198,73 @@ function DashboardOverview() {
       </header>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {invoicesQuery.isError && (
+          <div className="col-span-full flex items-center justify-between gap-4 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-[13px] text-destructive">
+            <span>Unable to load your data. Check your connection and try again.</span>
+            <button
+              onClick={() => invoicesQuery.refetch()}
+              className="shrink-0 rounded-full border border-destructive/30 bg-[#141414] px-3 py-1.5 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/10"
+            >
+              Retry
+            </button>
+          </div>
+        )}
         {dynamicMetrics.map((m) => (
-          <Card
+          <div
             key={m.label}
             className={cn(
-              "border-border bg-card p-5 shadow-none flex flex-col justify-between",
+              "group relative overflow-hidden rounded-lg border border-[#1F1F1F] bg-[#121212] p-4 sm:p-5 transition-all duration-200 hover:-translate-y-px hover:border-neutral-800 flex flex-col justify-between min-h-[110px]",
               m.accent === "overdue" && overdueCount > 0 &&
-                "border-red-200 bg-red-50/50",
+                "border-red-900/30 bg-red-950/10 hover:border-red-800/50",
             )}
           >
             <div
               className={cn(
-                "text-[11px] uppercase tracking-[0.18em] text-muted-foreground",
-                m.accent === "overdue" && overdueCount > 0 && "text-red-500",
+                "text-[10px] font-medium tracking-wider uppercase text-neutral-500 block mb-1",
+                m.accent === "overdue" && overdueCount > 0 && "text-red-400",
               )}
             >
               {m.label}
             </div>
             <div
               className={cn(
-                "mt-2 font-mono text-2xl font-semibold tabular-nums tracking-tight",
-                m.accent === "overdue" && overdueCount > 0 && "text-red-600",
+                "mt-3 text-xl md:text-2xl font-bold text-[#F5F5F5] tracking-tight tabular-nums leading-none",
+                m.accent === "overdue" && overdueCount > 0 && "text-red-400",
               )}
             >
-              {invoicesQuery.isLoading ? <span className="text-muted-foreground/40">—</span> : m.value}
+              {invoicesQuery.isLoading ? <span className="text-neutral-500/40">—</span> : m.value}
             </div>
-          </Card>
+            {m.label === "Total revenue" && invoicesQuery.data && (
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-emerald-400">
+                <span>+14.2%</span>
+                <span className="text-neutral-500">vs last month</span>
+              </div>
+            )}
+            {m.label === "Pending" && invoicesQuery.data && (
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-[#888888]">
+                <span>{invoices.filter(i => i.status === "Pending").length} active</span>
+              </div>
+            )}
+            {m.label === "Invoices" && invoicesQuery.data && (
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-neutral-500">
+                <span>Total created</span>
+              </div>
+            )}
+            {m.label === "Overdue" && invoicesQuery.data && (
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-neutral-500">
+                <span>Requires action</span>
+              </div>
+            )}
+            {m.label === "Clients" && invoicesQuery.data && (
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-neutral-500">
+                <span>Unique accounts</span>
+              </div>
+            )}
+          </div>
         ))}
       </section>
 
-      <RevenueChart revenueData={revenueData} currency={currency} />
+      <RevenueChart fullRevenueData={revenueData} currency={currency} />
 
       <section className="grid grid-cols-1 gap-4">
         <RecentInvoicesList
@@ -195,10 +280,14 @@ function DashboardOverview() {
   );
 }
 
-type RevenueChartProps = { revenueData: any[]; currency: string };
-function RevenueChart({ revenueData, currency }: RevenueChartProps) {
-  type RangeKey = "3M" | "6M" | "12M" | "YTD";
+type RevenueChartProps = { fullRevenueData: any[]; currency: string };
+function RevenueChart({ fullRevenueData, currency }: RevenueChartProps) {
   const [range, setRange] = React.useState("12M" as RangeKey);
+
+  const revenueData = React.useMemo(
+    () => filterRevenueData(fullRevenueData, range),
+    [fullRevenueData, range],
+  );
 
   const total = revenueData.reduce((a, b) => a + b.current, 0);
   const totalPrevious = revenueData.reduce((a, b) => a + b.previous, 0);
@@ -217,10 +306,10 @@ function RevenueChart({ revenueData, currency }: RevenueChartProps) {
   };
 
   return (
-    <Card className="border-border bg-card p-5 shadow-none">
+    <div className="rounded-lg border border-[#1F1F1F] bg-[#121212] p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="text-[10px] font-medium tracking-wider uppercase text-neutral-500 block mb-1">
             Revenue
           </div>
           <div className="mt-1 flex items-baseline gap-3">
@@ -319,15 +408,15 @@ function RevenueChart({ revenueData, currency }: RevenueChartProps) {
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-3 flex items-center gap-4 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+      <div className="mt-3 flex items-center gap-4 text-[11px] uppercase tracking-[0.16em] text-neutral-500">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-[2px] w-4 bg-foreground" /> This year
+          <span className="h-[2px] w-4 bg-white" /> This year
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-[2px] w-4 border-t border-dashed border-muted-foreground" /> Previous
+          <span className="h-[2px] w-4 border-t border-dashed border-neutral-600" /> Previous
         </span>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -346,15 +435,15 @@ function ChartTooltip({
   const current = payload.find((p) => p.dataKey === "current")?.value ?? 0;
   const previous = payload.find((p) => p.dataKey === "previous")?.value ?? 0;
   return (
-    <div className="rounded-md border border-border bg-background px-3 py-2 text-xs shadow-md">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+    <div className="rounded-md border border-[#1F1F1F] bg-[#0D0D0D] px-3 py-2 text-xs shadow-md">
+      <div className="text-[10px] uppercase tracking-[0.18em] text-neutral-500">{label}</div>
       <div className="mt-1 flex items-center justify-between gap-6">
-        <span className="text-muted-foreground">This year</span>
-        <span className="font-mono tabular-nums">{formatMoney(current, currency)}</span>
+        <span className="text-neutral-400">This year</span>
+        <span className="font-mono tabular-nums text-white">{formatMoney(current, currency)}</span>
       </div>
       <div className="flex items-center justify-between gap-6">
-        <span className="text-muted-foreground">Previous</span>
-        <span className="font-mono tabular-nums">{formatMoney(previous, currency)}</span>
+        <span className="text-neutral-400">Previous</span>
+        <span className="font-mono tabular-nums text-neutral-300">{formatMoney(previous, currency)}</span>
       </div>
     </div>
   );

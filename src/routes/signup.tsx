@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { AuthForm } from "@/components/auth/AuthForm";
@@ -8,11 +8,13 @@ import { AuthShell } from "@/components/auth/AuthShell";
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Sign up - Envoiz" },
+      { title: "Get started — Envoiz" },
       {
         name: "description",
-        content: "Create your free Envoiz account and start sending beautiful invoices in minutes.",
+        content:
+          "Create your free Envoiz account with Google or GitHub and start sending beautiful invoices in minutes.",
       },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: SignupPage,
@@ -30,18 +32,12 @@ function SignupPage() {
 
   return (
     <AuthShell
-      title="Create your account"
-      subtitle="Start sending beautiful invoices in minutes."
-      footer={
-        <>
-          Already have an account?{" "}
-          <Link to="/login" className="font-medium text-foreground hover:underline">
-            Log in
-          </Link>
-        </>
-      }
+      title="Create your Envoiz account"
+      subtitleText="Already have an account?"
+      subtitleLinkLabel="Log in."
+      subtitleLinkTo="/login"
     >
-      <AuthForm mode="signup" />
+      <AuthForm />
     </AuthShell>
   );
 }

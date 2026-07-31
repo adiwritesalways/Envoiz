@@ -45,7 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           u.user_metadata?.onboarding_pending ||
           u.user_metadata?.onboarding_complete;
         if (isNew && !alreadyFlagged) {
-          void supabase.auth.updateUser({ data: { onboarding_pending: true } });
+          supabase.auth.updateUser({ data: { onboarding_pending: true } }).then(({ data, error }) => {
+            if (!error && data.user) {
+              setSession((prev) => (prev ? { ...prev, user: data.user } : null));
+            }
+          });
         }
       }
     });
@@ -57,12 +61,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshSession = async () => {
-    setLoading(true);
+    // refreshSession() re-fetches from the Supabase server so updated user_metadata
+    // is returned. We do NOT set loading:true here — that would flash a full-screen
+    // spinner every time the user saves preferences.
     try {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-    } finally {
-      setLoading(false);
+      const { data, error } = await supabase.auth.refreshSession();
+      if (!error && data.session) {
+        setSession(data.session);
+      }
+    } catch {
+      // Non-fatal — the existing session is still valid.
     }
   };
 

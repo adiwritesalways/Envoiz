@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 533" width="400" height="533">
+  <rect width="400" height="533" fill="#0a0a0a"/>
+  <text x="24" y="48" font-family="Inter, sans-serif" font-weight="900" font-size="24" fill="#ffffff">[Mixi Studio] Invoice</text>
+  <line x1="24" y1="60" x2="376" y2="60" stroke="#ffffff" stroke-width="2"/>
+  <text x="24" y="85" font-family="Inter, sans-serif" font-weight="700" font-size="9" fill="#ffffff">[15th July 2024]</text>
+  <text x="240" y="85" font-family="Inter, sans-serif" font-weight="700" font-size="9" fill="#ffffff">[Due Date] N/A</text>
+  <text x="24" y="105" font-family="Inter, sans-serif" font-weight="700" font-size="9" fill="#ffffff">[Client Name]</text>
+  <text x="24" y="145" font-family="Inter, sans-serif" font-weight="900" font-size="28" fill="#ffffff">Services</text>
+  
+  <!-- Table header -->
+  <line x1="24" y1="165" x2="376" y2="165" stroke="#ffffff" stroke-width="1"/>
+  <text x="24" y="180" font-family="Inter, sans-serif" font-weight="700" font-size="8" fill="#ffffff">PROJECT ITEM #1</text>
+  <text x="280" y="180" font-family="Inter, sans-serif" font-size="8" fill="#ffffff">1</text>
+  <text x="320" y="180" font-family="Inter, sans-serif" font-size="8" fill="#ffffff">500.00</text>
+  <text x="355" y="180" font-family="Inter, sans-serif" font-size="8" fill="#ffffff">$500</text>
+  
+  <text x="24" y="205" font-family="Inter, sans-serif" font-weight="700" font-size="8" fill="#ffffff">PROJECT ITEM #2</text>
+  <text x="280" y="205" font-family="Inter, sans-serif" font-size="8" fill="#ffffff">1</text>
+  <text x="320" y="205" font-family="Inter, sans-serif" font-size="8" fill="#ffffff">500.00</text>
+  <text x="355" y="205" font-family="Inter, sans-serif" font-size="8" fill="#ffffff">$500</text>
+  
+  <!-- Summary -->
+  <text x="260" y="260" font-family="Inter, sans-serif" font-weight="700" font-size="8" fill="#ffffff">Subtotal</text>
+  <text x="340" y="260" font-family="Inter, sans-serif" font-weight="700" font-size="8" fill="#ffffff">$1,000.00</text>
+  <text x="260" y="278" font-family="Inter, sans-serif" font-weight="700" font-size="8" fill="#ffffff">Taxes</text>
+  <text x="340" y="278" font-family="Inter, sans-serif" font-weight="700" font-size="8" fill="#ffffff">$0.00</text>
+  <text x="260" y="298" font-family="Inter, sans-serif" font-weight="900" font-size="8" fill="#ffffff">Total Price</text>
+  <text x="340" y="298" font-family="Inter, sans-serif" font-weight="900" font-size="8" fill="#ffffff">$1,000.00</text>
+  
+  <!-- Invoice number -->
+  <text x="24" y="360" font-family="Inter, sans-serif" font-weight="900" font-size="36" fill="#ffffff">#001</text>
+  <line x1="24" y1="380" x2="376" y2="380" stroke="#ffffff" stroke-width="1"/>
+  
+  <!-- Footer -->
+  <text x="24" y="405" font-family="Inter, sans-serif" font-weight="800" font-size="10" fill="#ffffff">Payment</text>
+  <text x="24" y="425" font-family="Inter, sans-serif" font-weight="700" font-size="8" fill="#ffffff">[Bank Transfer]</text>
+  <text x="24" y="440" font-family="Inter, sans-serif" font-size="8" fill="rgba(255,255,255,0.72)">Your Bank Details</text>
+  
+  <text x="200" y="405" font-family="Inter, sans-serif" font-weight="800" font-size="10" fill="#ffffff">Terms &amp; Conditions</text>
+  <text x="200" y="425" font-family="Inter, sans-serif" font-weight="700" font-size="6" fill="#ffffff">Payment Terms</text>
+  <text x="200" y="438" font-family="Inter, sans-serif" font-size="6" fill="rgba(255,255,255,0.72)">Payment is due within 14 days...</text>
+  
+  <!-- Pro badge -->
+  <rect x="300" y="40" width="50" height="16" rx="8" fill="url(#proGradient)"/>
+  <text x="325" y="51" font-family="Inter, sans-serif" font-weight="700" font-size="8" fill="#ffffff" text-anchor="middle">PRO</text>
+  
+  <defs>
+    <linearGradient id="proGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#a855f7"/>
+    </linearGradient>
+  </defs>
+</svg>

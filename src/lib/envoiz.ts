@@ -65,9 +65,9 @@ export const sampleCustomers = [
 ] as const;
 
 export const sampleRecentDeliveries = [
-  { event: "invoice.paid", target: "webhook /payments", status: "Delivered", time: "2m ago" },
-  { event: "invoice.created", target: "webhook /billing", status: "Delivered", time: "12m ago" },
-  { event: "customer.created", target: "webhook /crm", status: "Retrying", time: "31m ago" },
+  { event: "invoice.paid", target: "email to customer", status: "Delivered", time: "2m ago" },
+  { event: "invoice.created", target: "in-app notification", status: "Delivered", time: "12m ago" },
+  { event: "customer.created", target: "email to admin", status: "Retrying", time: "31m ago" },
 ] as const;
 
 export const dashboardMetrics = [
@@ -87,7 +87,32 @@ export const settingsStorageKeys = {
   email: "envoiz_profile_email",
   defaultCurrency: "envoiz_default_currency",
   onboardingComplete: "envoiz_onboarding_complete",
+  brandLogo: "envoiz_brand_logo",
+  invoiceTemplate: "envoiz_invoice_template",
+  paymentInstructions: "envoiz_payment_instructions",
+  autoReminders: "envoiz_auto_reminders",
 } as const;
+
+export const basicInvoiceTemplate = "Standard";
+export const proInvoiceTemplate = "Template 1";
+
+export function defaultInvoiceTemplate(isPro: boolean) {
+  return isPro ? proInvoiceTemplate : basicInvoiceTemplate;
+}
+
+export function normalizeInvoiceTemplate(value: string | null | undefined) {
+  const normalized = (value ?? "").trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+
+  if (normalized === "template 1" || normalized === "template1") {
+    return proInvoiceTemplate;
+  }
+  
+  if (normalized === "template 2" || normalized === "template2" || normalized === "mixi studio") {
+    return "Template 2";
+  }
+
+  return basicInvoiceTemplate;
+}
 
 export function readStorageValue(key: string, fallback: string) {
   if (typeof window === "undefined") return fallback;
@@ -103,12 +128,20 @@ export function getUserScopedStorageKey(userId: string, key: string) {
   return `${key}:${userId}`;
 }
 
-export function readUserStorageValue(userId: string | undefined | null, key: string, fallback: string) {
+export function readUserStorageValue(
+  userId: string | undefined | null,
+  key: string,
+  fallback: string,
+) {
   if (!userId) return fallback;
   return readStorageValue(getUserScopedStorageKey(userId, key), fallback);
 }
 
-export function writeUserStorageValue(userId: string | undefined | null, key: string, value: string) {
+export function writeUserStorageValue(
+  userId: string | undefined | null,
+  key: string,
+  value: string,
+) {
   if (!userId) return;
   writeStorageValue(getUserScopedStorageKey(userId, key), value);
 }

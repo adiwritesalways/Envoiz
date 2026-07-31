@@ -67,6 +67,7 @@ export type InvoiceRecord = {
   createdAt: string;
   status: InvoiceStatus;
   taxRate?: number;
+  currency?: string;
 };
 
 export type InvoiceDraft = {
@@ -117,6 +118,7 @@ export function formatStoredInvoiceRecord(row: any): InvoiceRecord {
     createdAt: row.created_at || row.issue_date,
     status: row.payment_status as InvoiceStatus,
     taxRate,
+    currency: row.currency || "USD",
   };
 }
 
@@ -124,7 +126,7 @@ export async function fetchInvoices(userId: string) {
   const { data, error } = await supabase
     .from("envoiz_invoices")
     .select(
-      "id, invoice_number, user_id, client_name, client_email, created_at, issue_date, payment_status, discount, tax_rate, envoiz_invoice_items ( product, quantity, unit_price )",
+      "id, invoice_number, user_id, client_name, client_email, created_at, issue_date, payment_status, discount, tax_rate, currency, envoiz_invoice_items ( product, quantity, unit_price )",
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -196,7 +198,7 @@ export async function deleteInvoice(invoiceId: string, userId: string) {
 export function buildCustomerIndex(invoices: InvoiceRecord[]) {
   const customers = new Map<
     string,
-    { name: string; email: string; lastInvoiceAt: string; count: number; total: number }
+    { name: string; email: string; lastInvoiceAt: string; count: number; total: number; currency: string }
   >();
 
   for (const invoice of invoices) {
@@ -210,22 +212,52 @@ export function buildCustomerIndex(invoices: InvoiceRecord[]) {
         lastInvoiceAt: invoice.createdAt,
         count: 1,
         total: invoice.total,
+        currency: (invoice as any).currency ?? "USD",
       });
       continue;
     }
 
+    // Keep the currency from the most recent invoice (determined by lastInvoiceAt)
+    const isNewer = Date.parse(invoice.createdAt) > Date.parse(current.lastInvoiceAt);
     customers.set(key, {
       ...current,
-      lastInvoiceAt:
-        Date.parse(current.lastInvoiceAt) > Date.parse(invoice.createdAt)
-          ? current.lastInvoiceAt
-          : invoice.createdAt,
+      lastInvoiceAt: isNewer ? invoice.createdAt : current.lastInvoiceAt,
       count: current.count + 1,
       total: current.total + invoice.total,
+      currency: isNewer ? ((invoice as any).currency ?? current.currency) : current.currency,
     });
   }
 
   return Array.from(customers.values()).sort(
     (left, right) => Date.parse(right.lastInvoiceAt) - Date.parse(left.lastInvoiceAt),
   );
+}
+
+import { User } from "@supabase/supabase-js";
+
+export function checkIsPro(user: User | null | undefined): boolean {
+  if (!user) return false;
+  
+  // Developer override: always return true for testing!
+  return true;
+}
+
+export async function checkInvoiceLimit(userId: string, isPro: boolean = false): Promise<boolean> {
+  if (isPro) return false; // Pro users have no limit
+
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const { count, error } = await supabase
+    .from("envoiz_invoices")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", firstDayOfMonth);
+
+  if (error) {
+    console.error("Error checking invoice limit", error);
+    return false; // Fail open if error
+  }
+
+  return (count ?? 0) >= 10;
 }

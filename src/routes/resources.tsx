@@ -12,7 +12,7 @@ export const Route = createFileRoute("/resources")({
 
 function ResourcesLayout() {
   return (
-    <SiteShell>
+    <SiteShell dark>
       <Outlet />
     </SiteShell>
   );

@@ -60,17 +60,17 @@ export function RecentInvoicesList({
   if (!user) return null;
 
   return (
-    <Card className="border-border bg-card p-5 shadow-none w-full">
-      <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
+    <div className="rounded-lg border border-[#1F1F1F] bg-[#121212] p-6 w-full">
+      <div className="flex items-center justify-between gap-3 border-b border-[#1F1F1F] pb-4">
         <div>
-          <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
-          <p className="text-xs text-muted-foreground">{description}</p>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-white">{title}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-neutral-400">{description}</p>
         </div>
         {viewAllHref && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="shrink-0 -mr-2"
+            className="shrink-0 -mr-2 text-[11px] font-medium px-2.5 py-1.5 border border-[#222222] rounded bg-[#0D0D0D] hover:bg-[#121212] transition-colors h-7 text-white"
             onClick={() => {
               if (viewAllScrollTo) {
                 sessionStorage.setItem("envoiz-scroll-to", viewAllScrollTo);
@@ -85,15 +85,15 @@ export function RecentInvoicesList({
         )}
       </div>
 
-      <div className="mt-2 divide-y divide-border">
+      <div className="mt-2 divide-y divide-[#1F1F1F]">
         {loading ? (
           <div className="flex justify-center items-center py-10">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Loader2 className="h-6 w-6 animate-spin text-neutral-500" />
           </div>
         ) : invoices.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <FileStack className="h-6 w-6 text-muted-foreground/60" />
-            <p className="text-sm text-muted-foreground">No recent invoices found.</p>
+            <FileStack className="h-6 w-6 text-neutral-600" />
+            <p className="text-sm text-neutral-500">No recent invoices found.</p>
           </div>
         ) : (
           invoices.map((inv) => {
@@ -104,20 +104,20 @@ export function RecentInvoicesList({
               <div
                 key={inv.id}
                 className={cn(
-                  "group flex items-center justify-between gap-3 py-3 text-sm transition-colors",
-                  onSelect && "cursor-pointer hover:bg-muted/50 rounded-md px-2 -mx-2",
+                  "group flex items-center justify-between gap-3 py-3.5 text-xs transition-colors",
+                  onSelect && "cursor-pointer hover:bg-white/5 rounded-md px-2 -mx-2",
                 )}
                 onClick={() => onSelect && onSelect(inv)}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border bg-background text-[11px] font-semibold uppercase text-foreground">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[#1F1F1F] bg-[#0D0D0D] text-[10px] font-semibold uppercase text-neutral-300">
                     {clientInitial}
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium truncate max-w-[150px] sm:max-w-xs">
+                    <div className="font-medium text-neutral-200 group-hover:text-white transition-colors truncate max-w-[150px] sm:max-w-xs">
                       {inv.client_name || "Unknown Client"}
                     </div>
-                    <div className="font-mono text-xs text-muted-foreground">
+                    <div className="font-mono text-[11px] text-neutral-500">
                       {inv.invoice_number}
                     </div>
                   </div>
@@ -126,11 +126,11 @@ export function RecentInvoicesList({
                   <div className="hidden sm:block">
                     <PaymentStatusPill status={inv.payment_status} />
                   </div>
-                  <div className="text-muted-foreground text-xs whitespace-nowrap">
+                  <div className="text-neutral-400 text-xs font-mono whitespace-nowrap">
                     {formatDateLabel(inv.issue_date)}
                   </div>
                   {onSelect && (
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-neutral-500 transition-transform group-hover:translate-x-0.5" />
                   )}
                 </div>
               </div>
@@ -138,6 +138,6 @@ export function RecentInvoicesList({
           })
         )}
       </div>
-    </Card>
+    </div>
   );
 }

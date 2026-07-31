@@ -1,19 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, Search } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { brandName } from "@/lib/envoiz";
 
 type DocTable = {
@@ -37,7 +25,6 @@ const docsNav = [
     items: [
       { label: "Introduction", href: "#introduction" },
       { label: "Quick Start", href: "#quick-start" },
-      { label: "Authentication", href: "#authentication" },
     ],
   },
   {
@@ -50,21 +37,10 @@ const docsNav = [
     ],
   },
   {
-    title: "API Reference",
+    title: "Customers",
     items: [
-      { label: "Overview", href: "#overview" },
-      { label: "Endpoints", href: "#endpoints" },
-      { label: "Request & Response", href: "#request-response" },
-      { label: "Error Codes", href: "#error-codes" },
-      { label: "Rate Limits", href: "#rate-limits" },
-    ],
-  },
-  {
-    title: "Webhooks",
-    items: [
-      { label: "Setup", href: "#setup" },
-      { label: "Event Types", href: "#event-types" },
-      { label: "Payload Reference", href: "#payload-reference" },
+      { label: "Managing Customers", href: "#managing-customers" },
+      { label: "Invoice History", href: "#invoice-history" },
     ],
   },
   {
@@ -83,86 +59,56 @@ const sections: DocSection[] = [
     group: "Getting Started",
     title: "Introduction",
     paragraphs: [
-      `The ${brandName} API is designed to make invoicing feel like a product feature instead of a separate system. You can create invoices, deliver PDFs, and track payment states from the same workflow your team already uses.`,
-      "This guide walks through the core concepts, naming conventions, and the minimum setup required before you start calling the API in production. The examples below use realistic invoice data so you can copy the shape directly into your own integration.",
-      "If you only need to verify a flow in staging, start with the quick start section and the sample key shown there. You can expand into webhooks, templates, and billing controls once the basic invoice lifecycle is working.",
+      `${brandName} is designed to make invoicing feel effortless. You can create invoices, deliver PDFs, and track payment states directly from your dashboard without any extra tools or integrations.`,
+      "This guide walks through the core concepts and minimum setup required to start creating invoices. The examples use realistic data so you can understand each field and apply it directly to your workflow.",
     ],
-    codeLabel: "Create your first invoice",
-    code: `curl -X POST https://api.envoiz.com/v1/invoices \\
-  -H "Authorization: Bearer sk_test_your_key" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "customer_name": "Avery Johnson",
-    "currency": "USD",
-    "items": [
-      { "description": "Invoice design", "quantity": 1, "unit_price": 250 }
-    ]
-  }'`,
+    codeLabel: "Your first invoice",
+    code: `1. Sign up at envoiz.com
+2. Complete the onboarding wizard with your company name
+3. Go to Invoices → fill in client details and line items
+4. Click "Save Invoice" to generate your PDF`,
   },
   {
     id: "quick-start",
     group: "Getting Started",
     title: "Quick Start",
     paragraphs: [
-      "Most teams can go from account creation to a working invoice in under ten minutes. The first step is to create an API key, then send one authenticated request from your app or a tool like cURL.",
-      "We recommend testing with a single invoice, confirming the PDF URL, and then adding webhook handling for payment and delivery events. That sequence keeps the integration small and easy to debug.",
+      "Most users can go from signup to a finished invoice in under five minutes. Fill in your company details during onboarding, then head to the Invoices page to create your first one.",
+      "Start with a single client and a couple of line items. Once the preview looks right, save the invoice to generate the PDF — you can download, print, or share it straight from that screen.",
     ],
-    codeLabel: "Node.js request",
-    code: `const response = await fetch("https://api.envoiz.com/v1/invoices", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer sk_test_your_key",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    customer_name: "Avery Johnson",
-    items: [{ description: "Invoice design", quantity: 1, unit_price: 250 }],
-  }),
-});`,
-  },
-  {
-    id: "authentication",
-    group: "Getting Started",
-    title: "Authentication",
-    paragraphs: [
-      "All API requests must include a bearer token in the Authorization header. Test keys work only in non-production environments, while live keys are restricted to the organization that created them.",
-      "Rotate keys whenever a teammate leaves the project or a deployment pipeline is refreshed. If a request is rejected, check the token scope first, then confirm that your request is targeting the correct environment.",
-    ],
-    codeLabel: "Authorization header",
-    code: `Authorization: Bearer sk_live_************************`,
-    table: {
-      headers: ["Token type", "Use case", "Environment"],
-      rows: [
-        ["sk_test", "Local development and QA", "Staging"],
-        ["sk_live", "Production invoice delivery", "Live"],
-        ["Webhook secret", "Signature verification", "Both"],
-      ],
-    },
+    codeLabel: "Invoice checklist",
+    code: `✓ Company name and address (set in Settings or Onboarding)
+✓ Client name and email
+✓ At least one line item with a description and price
+✓ Issue date and due date
+✓ Currency and optional tax rate`,
   },
   {
     id: "creating-an-invoice",
     group: "Invoices",
     title: "Creating an Invoice",
     paragraphs: [
-      "An invoice is created by sending line items, customer details, and optional billing metadata to the invoices endpoint. The API returns a stable invoice identifier, a PDF link, and a current status.",
-      "You can create drafts first, then finalize them once the billable amount or tax rules are confirmed. That makes it easy to support review workflows without changing the invoice schema later.",
+      "An invoice is created by filling in client details and adding line items on the Invoices page. The preview updates in real time so you can see exactly how the PDF will look before saving.",
+      "You can add as many line items as needed, apply a discount, and set a tax rate. The total is calculated automatically. Once you save, the invoice is stored and a PDF is available for download.",
     ],
-    codeLabel: "POST /v1/invoices",
-    code: `POST /v1/invoices
-{
-  "customer_name": "Avery Johnson",
-  "issue_date": "2026-07-08",
-  "due_date": "2026-07-22",
-  "items": [
-    { "description": "Brand strategy", "quantity": 2, "unit_price": 180 }
-  ]
-}`,
+    codeLabel: "Invoice summary",
+    code: `Client:     Avery Johnson <avery@studio.co>
+Issue date: 2026-07-08
+Due date:   2026-07-22
+
+Items:
+  Brand strategy  ×2  @ $180  =  $360
+
+Subtotal:  $360
+Tax (10%): $36
+Total:     $396`,
     table: {
       headers: ["Field", "Type", "Notes"],
       rows: [
-        ["customer_name", "string", "Displayed on the invoice and PDF"],
-        ["items", "array", "At least one line item is required"],
-        ["due_date", "string", "Optional, ISO 8601 date"],
+        ["Client name", "text", "Displayed on the invoice and PDF"],
+        ["Items", "list", "At least one line item is required"],
+        ["Due date", "date", "Optional — displayed in the PDF header"],
+        ["Tax rate", "percent", "Applied to the subtotal after discount"],
       ],
     },
   },
@@ -171,24 +117,26 @@ const sections: DocSection[] = [
     group: "Invoices",
     title: "Invoice Fields Reference",
     paragraphs: [
-      "The invoice payload is intentionally small, but each field is flexible enough to cover freelancers, agencies, and subscription-style billing. Required fields are limited to the values needed to calculate totals and render a usable document.",
-      "If you need richer metadata, use the notes and custom fields sections rather than overloading the core schema. That keeps reporting reliable and avoids surprises when you export invoices to another system.",
+      "The invoice form is intentionally concise, but each field is flexible enough to cover freelancers, agencies, and recurring billing. Required fields are limited to the values needed to calculate totals and render a usable document.",
+      "If you need to pass additional context to a client, use the Notes field. It renders in the footer area of the PDF and supports free-form text.",
     ],
-    codeLabel: "Payload example",
-    code: `{
-  "customer_name": "Avery Johnson",
-  "currency": "USD",
-  "tax_rate": 0.2,
-  "notes": "Thanks for the quick turnaround.",
-  "custom_fields": [{ "label": "Project", "value": "Spring launch" }]
-}`,
+    codeLabel: "Field overview",
+    code: `Client Name     — required, shown on invoice header
+Client Email    — required, used for customer directory
+Billing Address — optional, shown below client name
+Issue Date      — defaults to today
+Due Date        — defaults to 14 days from today
+Currency        — ISO code, e.g. USD, EUR, GBP
+Discount        — flat amount deducted from subtotal
+Tax Rate        — percentage applied after discount
+Notes           — free-form footer text`,
     table: {
-      headers: ["Field", "Type", "Required", "Description"],
+      headers: ["Field", "Required", "Description"],
       rows: [
-        ["customer_name", "string", "Yes", "Invoice recipient"],
-        ["currency", "string", "Yes", "ISO currency code"],
-        ["tax_rate", "number", "No", "Applied after subtotal"],
-        ["notes", "string", "No", "Rendered in the footer area"],
+        ["Client name", "Yes", "Invoice recipient"],
+        ["Currency", "Yes", "ISO currency code"],
+        ["Tax rate", "No", "Applied after subtotal"],
+        ["Notes", "No", "Rendered in the PDF footer area"],
       ],
     },
   },
@@ -197,216 +145,141 @@ const sections: DocSection[] = [
     group: "Invoices",
     title: "Invoice Templates",
     paragraphs: [
-      "Templates let you standardize the look and structure of invoices across clients without rebuilding the document each time. You can choose a default layout, then override the logo, accent, or footer copy when needed.",
-      "Most teams create one template for client services and another for recurring retainers. That keeps the PDF output familiar while still leaving room for branding differences between business lines.",
+      "The invoice template is a clean black-and-white layout designed to look professional across all clients. It includes your company name, address, client details, line items table, and a totals block.",
+      "Your company details are pulled from Settings automatically. Update your company name and address there once and all new invoices will reflect the change immediately.",
     ],
-    codeLabel: "Template reference",
-    code: `{
-  "template_id": "tpl_minimal",
-  "layout": "minimal",
-  "accent": "brand",
-  "show_payment_instructions": true
-}`,
+    codeLabel: "Template structure",
+    code: `Header
+  ├── Company name + address      (top-left)
+  └── Invoice number + status     (top-right)
+
+Client block
+  ├── Billed To: name, email
+  └── Due Date
+
+Line items table
+  ├── Item name
+  ├── Quantity × unit price
+  └── Row total
+
+Totals
+  ├── Subtotal
+  ├── Discount (if set)
+  ├── Tax (if set)
+  └── Grand total
+
+Footer
+  └── Notes + Powered by Envoiz`,
   },
   {
     id: "pdf-export",
     group: "Invoices",
     title: "PDF Export",
     paragraphs: [
-      "PDF export happens after the invoice is rendered and validated, which means the file always reflects the final totals and tax calculations. The export endpoint is safe to call more than once if you need multiple delivery channels.",
-      "If your integration sends PDFs to both the customer and an archive, use the same invoice identifier and keep the returned file URL rather than generating duplicate documents.",
+      "PDF export is available for every saved invoice. The file always reflects the current totals, tax calculations, and layout — saving again regenerates it with the latest values.",
+      "You can also download a PNG version from the Download menu. Both formats are suitable for emailing to clients or attaching to accounting records.",
     ],
-    codeLabel: "Download PDF",
-    code: `GET /v1/invoices/inv_01H8Y/pdf`,
+    codeLabel: "Download options",
+    code: `From the Invoices page → Download menu:
+
+PDF
+  Vector output via @react-pdf/renderer.
+  File: Invoice-ENV-000042.pdf
+
+PNG
+  High-resolution image at 2× pixel ratio.
+  File: Invoice-ENV-000042.png`,
     table: {
-      headers: ["Response", "Meaning", "Action"],
+      headers: ["Format", "Use case", "Quality"],
       rows: [
-        ["200", "PDF ready", "Download or email"],
-        ["404", "Invoice not found", "Check the identifier"],
-        ["409", "Invoice not finalized", "Finalize first"],
+        ["PDF", "Client delivery, accounting records", "Vector — scales to any size"],
+        ["PNG", "Email previews, screenshots", "2× pixel ratio — 1190px wide"],
       ],
     },
   },
   {
-    id: "overview",
-    group: "API Reference",
-    title: "Overview",
+    id: "managing-customers",
+    group: "Customers",
+    title: "Managing Customers",
     paragraphs: [
-      "The public API is organized around invoices, customers, and delivery events. Every response uses predictable JSON shapes so you can log, validate, and replay requests without a custom parser for each endpoint.",
-      "For production usage, keep your request IDs and webhook event IDs in your logs. That makes support investigations much faster if a payment or PDF delivery needs to be traced end to end.",
+      "Customers in Envoiz are created automatically when you save your first invoice for a new client email. There is no separate step required — the directory stays in sync with your invoice activity.",
+      "You can browse all customers from the Customers page, see a full invoice history per client, and track total amounts invoiced. This gives you a quick overview of your most active relationships.",
     ],
-    codeLabel: "Base URL",
-    code: `https://api.envoiz.com/v1`,
+    codeLabel: "Customer profile",
+    code: `Name:            Avery Johnson
+Email:           avery@studio.co
+Total invoiced:  $12,840
+Invoice count:   9
+Last invoice:    2026-07-08`,
   },
   {
-    id: "endpoints",
-    group: "API Reference",
-    title: "Endpoints",
+    id: "invoice-history",
+    group: "Customers",
+    title: "Invoice History",
     paragraphs: [
-      "Most integrations only need a handful of endpoints to manage the invoice lifecycle. You can create, update, finalize, and export invoices without maintaining separate flows for each document type.",
-      "The endpoint table below focuses on the most common invoice operations. Use it as a starting point when mapping your application services to the API surface.",
+      "The invoice history view lists every invoice tied to a customer, sorted by date. You can click any invoice to open it for editing, downloading, or status updates.",
+      "Total amounts shown in the customer detail are summed from all their invoices regardless of status. Filtering by Paid, Pending, or Overdue lets you quickly identify what is still outstanding.",
     ],
-    codeLabel: "Common routes",
-    code: `GET /v1/invoices
-POST /v1/invoices
-GET /v1/invoices/{id}
-POST /v1/invoices/{id}/finalize`,
-    table: {
-      headers: ["Method", "Path", "Purpose"],
-      rows: [
-        ["GET", "/v1/invoices", "List invoices"],
-        ["POST", "/v1/invoices", "Create invoice"],
-        ["POST", "/v1/invoices/{id}/finalize", "Lock totals and render PDF"],
-      ],
-    },
-  },
-  {
-    id: "request-response",
-    group: "API Reference",
-    title: "Request & Response",
-    paragraphs: [
-      "Requests should be sent as JSON with an explicit content type. Responses always include the invoice identifier and status so your UI can update immediately without polling a separate system.",
-      "When an operation fails, the API returns a machine-readable error code and a message that can be shown to support staff. Keep the raw error payload in your logs even if the UI displays a simplified version.",
-    ],
-    codeLabel: "Successful response",
-    code: `{
-  "id": "inv_01H8Y",
-  "status": "draft",
-  "pdf_url": "https://cdn.envoiz.com/inv_01H8Y.pdf"
-}`,
-  },
-  {
-    id: "error-codes",
-    group: "API Reference",
-    title: "Error Codes",
-    paragraphs: [
-      "Error handling is intentionally explicit so your team can distinguish validation issues from permission or service problems. Most failures can be resolved without contacting support once you know which category the code belongs to.",
-      "If you see repeated 429 responses, back off exponentially rather than retrying immediately. That gives your integration room to recover while preserving throughput for other requests.",
-    ],
-    codeLabel: "Error payload",
-    code: `{
-  "error": {
-    "code": "invalid_invoice_total",
-    "message": "The sum of items does not match the invoice total."
-  }
-}`,
-    table: {
-      headers: ["Code", "Meaning", "Typical fix"],
-      rows: [
-        ["invalid_invoice_total", "Totals do not balance", "Recalculate line items"],
-        ["unauthorized", "Missing or expired token", "Refresh the API key"],
-        ["rate_limited", "Too many requests", "Retry after the reset window"],
-      ],
-    },
-  },
-  {
-    id: "rate-limits",
-    group: "API Reference",
-    title: "Rate Limits",
-    paragraphs: [
-      "Rate limits are applied per token so one busy integration cannot starve another. The safest pattern is to batch invoice creation during sync jobs and keep user-triggered requests small and immediate.",
-      "If your application needs higher throughput, contact support with a short description of the workload and the endpoints you plan to call most often.",
-    ],
-    codeLabel: "Limit headers",
-    code: `X-RateLimit-Limit: 120
-X-RateLimit-Remaining: 84
-X-RateLimit-Reset: 1710000123`,
-    table: {
-      headers: ["Window", "Limit", "Notes"],
-      rows: [
-        ["1 minute", "120 requests", "General API usage"],
-        ["1 hour", "2,000 requests", "Burst protection"],
-        ["24 hours", "50,000 requests", "Organization aggregate"],
-      ],
-    },
-  },
-  {
-    id: "setup",
-    group: "Webhooks",
-    title: "Setup",
-    paragraphs: [
-      "Webhooks are the preferred way to react to invoice state changes, payment events, and PDF generation updates. Register an HTTPS endpoint, then store the webhook secret so you can validate signatures on every call.",
-      "Keep the handler fast. Acknowledge the event, queue any expensive work, and process the payload asynchronously so retries stay predictable.",
-    ],
-    codeLabel: "Signature check",
-    code: `const isValid = verifyWebhookSignature(
-  rawBody,
-  headers["x-envoiz-signature"],
-  process.env.ENVOIZ_WEBHOOK_SECRET
-);`,
-  },
-  {
-    id: "event-types",
-    group: "Webhooks",
-    title: "Event Types",
-    paragraphs: [
-      "Each event maps to a specific invoice lifecycle milestone, which keeps downstream automation easy to reason about. Most teams start with invoice creation and payment events, then add PDF and customer updates later.",
-      "You can safely subscribe to more events than you currently use. Unhandled events can be logged and ignored until your workflow needs them.",
-    ],
-    codeLabel: "Example events",
-    code: `invoice.created
-invoice.finalized
-invoice.paid
-pdf.generated`,
-    table: {
-      headers: ["Event", "When it fires", "Recommended action"],
-      rows: [
-        ["invoice.created", "Draft saved", "Queue review workflow"],
-        ["invoice.paid", "Payment confirmed", "Mark revenue recognized"],
-        ["pdf.generated", "Document ready", "Email the file to the client"],
-      ],
-    },
-  },
-  {
-    id: "payload-reference",
-    group: "Webhooks",
-    title: "Payload Reference",
-    paragraphs: [
-      "Webhook payloads include the event type, timestamp, invoice object, and a request identifier you can correlate with API logs. The invoice snapshot is intentionally complete so your app does not need to make a follow-up fetch for common actions.",
-      "Treat the payload as immutable input. If you need the latest invoice state, call the API again rather than mutating the webhook body directly.",
-    ],
-    codeLabel: "Payload sample",
-    code: `{
-  "type": "invoice.paid",
-  "created_at": "2026-07-08T08:15:00Z",
-  "invoice": { "id": "inv_01H8Y", "status": "paid" }
-}`,
+    codeLabel: "History example",
+    code: `Customer: Avery Johnson
+─────────────────────────────
+ENV-000042  $4,800   Paid
+ENV-000038  $2,400   Paid
+ENV-000031  $1,200   Overdue
+─────────────────────────────
+Total invoiced: $8,400`,
   },
   {
     id: "managing-your-account",
     group: "Account & Billing",
     title: "Managing Your Account",
     paragraphs: [
-      "Account settings control your organization profile, notification preferences, and team access. Most billing teams update these values once during onboarding and then only revisit them when company details change.",
-      "If you operate multiple client projects, use separate workspaces or named environments so invoice templates and support contacts stay organized.",
+      "Account settings control your company profile, notification preferences, and security options. Most teams update these values once during onboarding and only revisit them when company details change.",
+      "Your company name and address set in Settings appear on every new invoice automatically. Update them under Settings → Preferences and save to apply the change going forward.",
     ],
-    codeLabel: "Workspace update",
-    code: `PATCH /v1/account
-{
-  "company_name": "Northstar Studio",
-  "support_email": "billing@northstar.studio"
-}`,
+    codeLabel: "Settings overview",
+    code: `Settings → Preferences
+  ├── Default currency
+  ├── Company name
+  └── Company address
+
+Settings → Change Password
+  └── Sends a secure reset link to your email
+
+Settings → Change Email
+  └── Sends a confirmation link to the new address`,
   },
   {
     id: "plans-limits",
     group: "Account & Billing",
     title: "Plans & Limits",
     paragraphs: [
-      "Plans are built around invoice volume, API access, and collaboration needs. Solo operators can stay on a lightweight tier, while teams that automate delivery and reporting can move to a higher plan without reworking the product setup.",
-      "Limits are visible in the dashboard so you can forecast usage before you hit a threshold. That makes it easier to decide when to upgrade rather than learning about a limit from a failed request.",
+      "Plans are built around invoice volume and collaboration needs. Solo operators can stay on the free tier, while growing teams can move to a higher plan for unlimited invoices, analytics, and custom branding.",
+      "Limits are visible in the dashboard so you can forecast usage before hitting a threshold. That makes it easier to decide when to upgrade.",
     ],
-    codeLabel: "Usage snapshot",
-    code: `{
-  "plan": "Pro",
-  "monthly_invoices": 182,
-  "api_requests_remaining": 1480
-}`,
+    codeLabel: "Plan comparison",
+    code: `Starter (free)
+  ├── 100 invoices / month
+  ├── Basic templates
+  └── PDF export
+
+Pro ($19/mo)
+  ├── Unlimited invoices
+  ├── Advanced analytics
+  ├── Custom branding
+  └── Team members & roles
+
+Business ($49/mo)
+  ├── Everything in Pro
+  ├── Priority PDF processing
+  ├── SOC 2 & audit logs
+  └── Dedicated account manager`,
     table: {
       headers: ["Plan area", "Included", "Limit"],
       rows: [
         ["Invoices", "Yes", "Varies by plan"],
-        ["API access", "Yes", "Token based"],
-        ["Team seats", "Yes", "Admin controlled"],
+        ["PDF export", "Yes", "All plans"],
+        ["Team seats", "Pro+", "Admin controlled"],
       ],
     },
   },
@@ -415,14 +288,22 @@ pdf.generated`,
     group: "Account & Billing",
     title: "Billing FAQ",
     paragraphs: [
-      "Billing questions usually fall into one of three buckets: subscription changes, invoice disputes, or payment method updates. The support team can resolve most issues quickly if you include the invoice ID and the date range involved.",
-      "For refunds or plan changes, keep in mind that the billing cycle is tied to the organization rather than the individual user account. That helps keep access consistent when a team member leaves or changes roles.",
+      "Billing questions usually fall into one of three areas: subscription changes, invoice disputes, or payment method updates. The support team can resolve most issues quickly if you include your account email and the date range involved.",
+      "For refunds or plan changes, the billing cycle is tied to the organization rather than the individual user account. That helps keep access consistent when a team member leaves or changes roles.",
     ],
     codeLabel: "Common question",
     code: `Can I switch plans mid-cycle?
-Yes. Changes take effect immediately, and prorated adjustments appear on the next billing statement.`,
+Yes. Changes take effect immediately, and prorated
+adjustments appear on the next billing statement.`,
   },
 ];
+
+const groupColors: Record<string, string> = {
+  "Getting Started": "bg-white/5 text-[#aaaaaa] border-white/10",
+  Invoices: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  Customers: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  "Account & Billing": "bg-amber-500/10 text-amber-400 border-amber-500/20",
+};
 
 export const Route = createFileRoute("/resources/docs")({
   head: () => ({
@@ -433,45 +314,54 @@ export const Route = createFileRoute("/resources/docs")({
 
 function DocsPage() {
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10 md:py-14">
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-[12px] uppercase tracking-[0.18em] text-muted-foreground">
-              Documentation
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] md:text-5xl">
-              Developer and user reference
-            </h1>
-          </div>
-          <div className="w-full lg:max-w-md">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search documentation..."
-                className="h-11 rounded-full pl-9"
-              />
+    <div className="min-h-screen bg-[#050505] text-[#F5F5F5]">
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-[#111111] px-6 pb-12 pt-12 md:pb-16 md:pt-16">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute left-1/2 top-0 h-[300px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/[0.05] blur-[100px]" />
+        </div>
+        <div className="relative mx-auto max-w-7xl">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#555555]">
+                Documentation
+              </p>
+              <h1 className="mt-3 text-3xl font-extrabold tracking-[-0.03em] text-white md:text-5xl">
+                Help and user reference
+              </h1>
+            </div>
+            <div className="w-full lg:max-w-md">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#555555]" />
+                <input
+                  type="search"
+                  placeholder="Search documentation..."
+                  className="h-11 w-full rounded-full border border-[#2A2A2A] bg-[#0D0D0D] pl-10 pr-4 text-[13.5px] text-white placeholder:text-[#555555] focus:border-[#555555] focus:outline-none"
+                />
+              </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <Collapsible className="lg:hidden">
-          <Card className="border-hairline bg-white/80">
+      <div className="mx-auto max-w-7xl px-6 py-10 md:py-14">
+        {/* Mobile nav */}
+        <Collapsible className="mb-6 lg:hidden">
+          <div className="rounded-2xl border border-[#1A1A1A] bg-[#0D0D0D]">
             <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                className="flex w-full items-center justify-between px-4 py-3 text-left"
+              <button
+                type="button"
+                className="flex w-full items-center justify-between px-5 py-4 text-left"
               >
-                <span className="text-sm font-medium">Browse sections</span>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
+                <span className="text-sm font-medium text-white">Browse sections</span>
+                <ChevronDown className="h-4 w-4 text-[#555555]" />
+              </button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="border-t border-hairline p-4">
+            <CollapsibleContent className="border-t border-[#1A1A1A] p-4">
               <div className="grid gap-4">
                 {docsNav.map((group) => (
                   <div key={group.title}>
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#555555]">
                       {group.title}
                     </div>
                     <div className="mt-2 grid gap-1">
@@ -479,7 +369,7 @@ function DocsPage() {
                         <a
                           key={item.label}
                           href={item.href}
-                          className="rounded-lg px-2 py-1.5 text-[13px] text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground"
+                          className="rounded-lg px-2 py-1.5 text-[13px] text-[#888888] transition-colors hover:bg-[#111111] hover:text-white"
                         >
                           {item.label}
                         </a>
@@ -489,15 +379,16 @@ function DocsPage() {
                 ))}
               </div>
             </CollapsibleContent>
-          </Card>
+          </div>
         </Collapsible>
 
         <div className="grid gap-10 lg:grid-cols-[280px_minmax(0,1fr)]">
+          {/* Sidebar */}
           <aside className="hidden lg:block">
-            <div className="sticky top-24 space-y-6 rounded-3xl border border-hairline bg-white/80 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_18px_50px_rgba(0,0,0,0.05)]">
+            <div className="sticky top-24 space-y-6 rounded-2xl border border-[#1A1A1A] bg-[#0D0D0D] p-5">
               {docsNav.map((group) => (
                 <div key={group.title}>
-                  <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                  <div className="text-[11px] uppercase tracking-[0.18em] text-[#555555]">
                     {group.title}
                   </div>
                   <div className="mt-3 grid gap-1">
@@ -505,7 +396,7 @@ function DocsPage() {
                       <a
                         key={item.label}
                         href={item.href}
-                        className="rounded-xl px-3 py-2 text-[13px] text-foreground/75 transition-colors hover:bg-secondary hover:text-foreground"
+                        className="rounded-xl px-3 py-2 text-[13px] text-[#888888] transition-colors hover:bg-[#111111] hover:text-white"
                       >
                         {item.label}
                       </a>
@@ -516,52 +407,79 @@ function DocsPage() {
             </div>
           </aside>
 
-          <div className="space-y-8">
+          {/* Content */}
+          <div className="space-y-6">
             {sections.map((section) => (
               <article
                 key={section.id}
                 id={section.id}
-                className="scroll-mt-24 rounded-3xl border border-hairline bg-white/80 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_18px_50px_rgba(0,0,0,0.05)] md:p-8"
+                className="scroll-mt-24 rounded-2xl border border-[#1A1A1A] bg-[#0D0D0D] p-6 md:p-8"
               >
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{section.group}</Badge>
+                  <span
+                    className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-medium ${groupColors[section.group] ?? "border-[#2A2A2A] bg-[#111111] text-[#888888]"}`}
+                  >
+                    {section.group}
+                  </span>
                 </div>
-                <h2 className="mt-4 text-2xl font-semibold tracking-[-0.03em]">{section.title}</h2>
-                <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-muted-foreground">
+                <h2 className="mt-4 text-2xl font-bold tracking-[-0.03em] text-white">
+                  {section.title}
+                </h2>
+                <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-[#888888]">
                   {section.paragraphs.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                 </div>
 
-                <div className="mt-6 rounded-2xl border border-hairline bg-black p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.18)]">
-                  <div className="mb-3 text-[11px] uppercase tracking-[0.18em] text-white/60">
-                    {section.codeLabel}
+                {/* Code block */}
+                <div className="mt-6 overflow-hidden rounded-xl border border-[#1A1A1A] bg-[#060606]">
+                  <div className="flex items-center gap-2 border-b border-[#1A1A1A] px-4 py-2.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#1A1A1A]" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#1A1A1A]" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#1A1A1A]" />
+                    <span className="ml-2 text-[11px] uppercase tracking-[0.18em] text-[#555555]">
+                      {section.codeLabel}
+                    </span>
                   </div>
-                  <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-white/90">
+                  <pre className="overflow-x-auto p-4 font-mono text-[12px] leading-relaxed text-[#aaaaaa]/90">
                     <code>{section.code}</code>
                   </pre>
                 </div>
 
+                {/* Table */}
                 {section.table && (
-                  <div className="mt-6">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
+                  <div className="mt-6 overflow-hidden rounded-xl border border-[#1A1A1A]">
+                    <table className="w-full text-[13px]">
+                      <thead className="border-b border-[#1A1A1A] bg-[#060606]">
+                        <tr>
                           {section.table.headers.map((header) => (
-                            <TableHead key={header}>{header}</TableHead>
+                            <th
+                              key={header}
+                              className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-[#555555]"
+                            >
+                              {header}
+                            </th>
                           ))}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                        </tr>
+                      </thead>
+                      <tbody>
                         {section.table.rows.map((row, rowIndex) => (
-                          <TableRow key={`${section.id}-${rowIndex}`}>
-                            {row.map((cell) => (
-                              <TableCell key={cell}>{cell}</TableCell>
+                          <tr
+                            key={`${section.id}-${rowIndex}`}
+                            className="border-b border-[#111111] last:border-0"
+                          >
+                            {row.map((cell, cellIndex) => (
+                              <td
+                                key={cell}
+                                className={`px-4 py-3 ${cellIndex === 0 ? "font-medium text-white" : "text-[#888888]"}`}
+                              >
+                                {cell}
+                              </td>
                             ))}
-                          </TableRow>
+                          </tr>
                         ))}
-                      </TableBody>
-                    </Table>
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </article>
