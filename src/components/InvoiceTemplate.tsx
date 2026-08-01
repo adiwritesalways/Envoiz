@@ -64,8 +64,8 @@ const defaultInvoice: InvoiceTemplateData = {
   grandTotal: "$4860",
   notes:
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent placerat vel sapien a ornare. Morbi faucibus nunc diam, in sodales nunc rutrum et. Aenean quis risus blandit, finibus lorem vitae, tincidunt purus.",
-  contactEmail: "HELLO@REALLYGREATSITE.COM",
-  contactPhone: "+123-456-7890",
+  contactEmail: "",
+  contactPhone: "",
   signerName: "OLIVIA WILSON",
   signerTitle: "GENERAL MANAGER",
 };
@@ -86,9 +86,9 @@ export default function InvoiceTemplate({ data = {}, exportMode = false }: Invoi
     paymentMethod: { ...defaultInvoice.paymentMethod, ...data.paymentMethod },
     items: data.items?.length ? data.items : defaultInvoice.items,
   };
-
   const emptyRows = Array.from({ length: invoice.emptyRowCount ?? 4 });
   const companyDisplay = invoice.companyName.replace(/\s*&\s*/, "\n& ");
+  const contactEmail = invoice.contactEmail;
 
   return (
     <div className={exportMode ? "invoice-page invoice-page--export" : "invoice-page"}>
@@ -183,9 +183,13 @@ export default function InvoiceTemplate({ data = {}, exportMode = false }: Invoi
             <p>
               FOR ANY QUESTIONS, PLEASE CONTACT
               <br />
-              {invoice.contactEmail}
-              <br />
-              OR {invoice.contactPhone}.
+              {contactEmail}
+              {invoice.contactPhone ? (
+                <>
+                  <br />
+                  OR {invoice.contactPhone}.
+                </>
+              ) : null}
             </p>
           </div>
         </div>

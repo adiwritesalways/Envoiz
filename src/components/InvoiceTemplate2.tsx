@@ -123,7 +123,7 @@ export default function InvoiceTemplate2({ data = {}, exportMode = false }: Invo
       {/* Payment + Notes */}
       <div className="footer-grid">
         <div className="payment-block">
-          <h3 className="footer-heading">Payment</h3>
+          <p className="footer-heading">Payment</p>
           <div className="payment-line">
             <p className="payment-value">{payment.bankLabel}</p>
             <p className="payment-value">{payment.bankDetails}</p>
@@ -136,7 +136,7 @@ export default function InvoiceTemplate2({ data = {}, exportMode = false }: Invo
 
         {notes && (
           <div className="notes-block">
-            <h3 className="footer-heading">Notes to Customer</h3>
+            <p className="footer-heading">Notes to Customer</p>
             <p className="notes-body">{notes}</p>
           </div>
         )}

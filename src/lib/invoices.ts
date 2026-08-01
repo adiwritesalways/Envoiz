@@ -47,17 +47,6 @@ export type InvoiceLineItem = {
   unitPrice: number;
 };
 
-export type InvoiceRow = {
-  id: string;
-  user_id: string;
-  client_name: string;
-  client_email: string;
-  items: InvoiceLineItem[] | null;
-  total: number | string | null;
-  created_at: string;
-  status: InvoiceStatus;
-};
-
 export type InvoiceRecord = {
   id: string;
   clientName: string;
@@ -70,14 +59,12 @@ export type InvoiceRecord = {
   currency?: string;
 };
 
-export type InvoiceDraft = {
-  clientName: string;
-  clientEmail: string;
-  items: InvoiceLineItem[];
-  status: InvoiceStatus;
-};
-
 export function calculateInvoiceTotal(items: InvoiceLineItem[], discount = 0, taxRate = 0) {
+  return calculateInvoiceBreakdown(items, discount, taxRate).total;
+}
+
+// Shared breakdown utility – centralizes subtotal, discount, tax, total logic.
+export function calculateInvoiceBreakdown(items: InvoiceLineItem[], discount = 0, taxRate = 0) {
   const subtotal = items.reduce(
     (sum, item) =>
       sum + Math.max(0, Number(item.quantity) || 0) * Math.max(0, Number(item.unitPrice) || 0),
@@ -86,7 +73,8 @@ export function calculateInvoiceTotal(items: InvoiceLineItem[], discount = 0, ta
   const safeDiscount = Math.min(Math.max(0, discount), subtotal);
   const taxable = subtotal - safeDiscount;
   const tax = taxable * (Math.min(Math.max(0, taxRate), 100) / 100);
-  return Math.max(0, taxable + tax);
+  const total = Math.max(0, taxable + tax);
+  return { subtotal, safeDiscount, taxable, tax, total };
 }
 
 export function formatStoredInvoiceRecord(row: any): InvoiceRecord {
@@ -136,63 +124,6 @@ export async function fetchInvoices(userId: string) {
   }
 
   return (data ?? []).map((row) => formatStoredInvoiceRecord(row));
-}
-
-export async function createInvoice(userId: string, draft: InvoiceDraft) {
-  const payload = {
-    user_id: userId,
-    client_name: draft.clientName,
-    client_email: draft.clientEmail,
-    items: draft.items,
-    total: calculateInvoiceTotal(draft.items),
-    status: draft.status,
-  };
-
-  const { data, error } = await supabase
-    .from("envoiz_invoices")
-    .insert(payload)
-    .select("id, user_id, client_name, client_email, items, total, created_at, status")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return formatStoredInvoiceRecord(data as InvoiceRow);
-}
-
-export async function updateInvoice(invoiceId: string, userId: string, draft: InvoiceDraft) {
-  const { data, error } = await supabase
-    .from("envoiz_invoices")
-    .update({
-      client_name: draft.clientName,
-      client_email: draft.clientEmail,
-      items: draft.items,
-      total: calculateInvoiceTotal(draft.items),
-      status: draft.status,
-    })
-    .eq("id", invoiceId)
-    .eq("user_id", userId)
-    .select("id, user_id, client_name, client_email, items, total, created_at, status")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return formatStoredInvoiceRecord(data as InvoiceRow);
-}
-
-export async function deleteInvoice(invoiceId: string, userId: string) {
-  const { error } = await supabase
-    .from("envoiz_invoices")
-    .delete()
-    .eq("id", invoiceId)
-    .eq("user_id", userId);
-
-  if (error) {
-    throw error;
-  }
 }
 
 export function buildCustomerIndex(invoices: InvoiceRecord[]) {

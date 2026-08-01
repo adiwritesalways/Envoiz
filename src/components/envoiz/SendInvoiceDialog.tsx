@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Send, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -25,7 +25,9 @@ export function SendInvoiceDialog({
   onNewInvoice,
 }: SendInvoiceDialogProps) {
   const { user } = useAuth();
-  const [subject, setSubject] = useState(`Invoice ${invoiceNumber} from ${user?.user_metadata?.company_name || 'Envoiz'}`);
+  const companyName = user?.user_metadata?.company_name || "Envoiz";
+  const buildSubject = () => `Invoice${invoiceNumber ? ` ${invoiceNumber}` : ""} from ${companyName}`;
+  const [subject, setSubject] = useState(buildSubject);
   const [message, setMessage] = useState(`Hi ${clientName || 'there'},\n\nPlease find attached the invoice ${invoiceNumber}.\n\nThank you for your business!`);
   const [sending, setSending] = useState(false);
 
@@ -73,11 +75,20 @@ export function SendInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md gap-0 border-hairline p-0 overflow-hidden bg-[#0d0d0d] shadow-2xl sm:rounded-3xl" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        hideCloseButton
+        className="max-w-md gap-0 border-hairline p-0 overflow-hidden bg-[#0d0d0d] shadow-2xl sm:rounded-3xl"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <div className="relative border-b border-[#1f1f1f] bg-[#050505] px-6 py-6">
-          <DialogClose className="absolute right-5 top-5 rounded-full p-1.5 text-neutral-500 transition-colors hover:bg-white/10 hover:text-white focus:outline-none">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            aria-label="Close dialog"
+            className="absolute right-5 top-5 rounded-full p-1.5 text-neutral-500 transition-colors hover:bg-white/10 hover:text-white focus:outline-none"
+          >
             <X className="h-4 w-4" />
-          </DialogClose>
+          </button>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/10">
               <Send className="h-4 w-4 text-foreground" />
@@ -149,14 +160,6 @@ export function SendInvoiceDialog({
             )}
             
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => onOpenChange(false)}
-                disabled={sending}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-[13px] font-medium text-neutral-400 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
               <button
                 type="submit"
                 disabled={sending}

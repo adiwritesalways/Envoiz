@@ -182,7 +182,7 @@
 }
 
 .invoice-template-2-root .footer-heading {
-  font-weight: 800;
+  font-weight: 400;
   font-size: 15px;
   margin: 0 0 12px;
 }
@@ -196,7 +196,7 @@
 }
 
 .invoice-template-2-root .payment-value {
-  font-weight: 400;
+  font-weight: 400 !important;
   color: var(--dim);
   margin: 0;
 }

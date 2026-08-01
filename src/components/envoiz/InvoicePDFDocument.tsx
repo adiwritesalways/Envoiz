@@ -45,8 +45,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   logoImage: {
-    maxWidth: 140,
-    maxHeight: 50,
+    width: 80,
+    maxHeight: 40,
+    objectFit: "contain",
     marginBottom: 8,
   },
   headerRow: {
@@ -605,9 +606,14 @@ const Template1Document = ({ invoice }: { invoice: InvoiceData }) => {
           <View style={t1Styles.contact}>
             <Text style={t1Styles.contactText}>
               FOR ANY QUESTIONS, PLEASE CONTACT{"\n"}
-              {invoice.contactEmail || "HELLO@REALLYGREATSITE.COM"}
+              {invoice.contactEmail || ""}
               {"\n"}
-              OR {invoice.contactPhone || "+123-456-7890"}.
+              {invoice.contactPhone ? (
+                <>
+                  {"\n"}
+                  OR {invoice.contactPhone}.
+                </>
+              ) : null}
             </Text>
           </View>
         </View>
@@ -744,9 +750,8 @@ const mixiStyles = StyleSheet.create({
   },
   paymentLabel: {
     fontSize: 9.5,
-    fontWeight: 700,
-    marginBottom: 2,
-    color: "#ffffff",
+    fontWeight: 400,
+    color: "rgba(255,255,255,0.72)",
   },
   paymentValue: {
     fontSize: 9.5,
@@ -893,11 +898,10 @@ export const InvoicePDFDocument = ({ invoice }: { invoice: InvoiceData }) => {
       <Page size="A4" style={styles.page}>
         <View style={styles.headerRow}>
           <View style={styles.companyBox}>
-            {invoice.brandLogo ? (
+            {invoice.isPro && invoice.brandLogo && (
               <Image src={invoice.brandLogo} style={styles.logoImage} />
-            ) : (
-              <Text style={styles.brandName}>{invoice.companyName}</Text>
             )}
+            <Text style={styles.brandName}>{invoice.companyName}</Text>
             <Text style={styles.brandAddress}>{invoice.companyAddress}</Text>
           </View>
           <View style={styles.invoiceMetaBox}>

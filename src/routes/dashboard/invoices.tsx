@@ -16,6 +16,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
 import { pdf } from "@react-pdf/renderer";
@@ -173,7 +174,9 @@ async function removeWhiteBackground(src: string, threshold = 240): Promise<stri
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
       for (let i = 0; i < data.length; i += 4) {
-        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const r = data[i],
+          g = data[i + 1],
+          b = data[i + 2];
         if (r >= threshold && g >= threshold && b >= threshold) {
           data[i + 3] = 0; // make transparent
         }
@@ -185,7 +188,6 @@ async function removeWhiteBackground(src: string, threshold = 240): Promise<stri
     img.src = src;
   });
 }
-
 
 function buildTemplate1InvoiceHtml(invoice: InvoiceExportData) {
   const fmt = (n: number) =>
@@ -779,8 +781,8 @@ function InvoicesPage() {
         defaultInvoiceTemplate(isPro),
       ),
     ),
-    contactEmail: "HELLO@REALLYGREATSITE.COM",
-    contactPhone: "+123-456-7890",
+    contactEmail: user?.email || "",
+    contactPhone: "",
     paymentInstructions: readUserStorageValue(
       user?.id,
       settingsStorageKeys.paymentInstructions,
@@ -895,8 +897,8 @@ function InvoicesPage() {
             ),
             grandTotal: money(invoiceData.grandTotal, invoiceData.currency),
             notes: invoiceData.notes || " ",
-            contactEmail: invoiceData.contactEmail || "HELLO@REALLYGREATSITE.COM",
-            contactPhone: invoiceData.contactPhone || "+123-456-7890",
+            contactEmail: invoiceData.contactEmail || user?.email || "",
+            contactPhone: invoiceData.contactPhone || "",
             signerName: invoiceData.companyName || " ",
             signerTitle: "GENERAL MANAGER",
           };
@@ -917,12 +919,18 @@ function InvoicesPage() {
               };
             }
           }
-          templateRoot.render(<InvoiceTemplate data={templateData} exportMode />);
+          flushSync(() => {
+            templateRoot.render(<InvoiceTemplate data={templateData} exportMode />);
+          });
           await new Promise((resolve) =>
             requestAnimationFrame(() => requestAnimationFrame(resolve)),
           );
           try {
-            const dataUrl = await toPng(container.firstElementChild as HTMLElement, {
+            const target = container.firstElementChild as HTMLElement | null;
+            if (!target) {
+              throw new Error("Modern Executive invoice failed to render.");
+            }
+            const dataUrl = await toPng(target, {
               pixelRatio: 2,
               cacheBust: true,
               backgroundColor: "#efe7d8",
@@ -1006,12 +1014,18 @@ function InvoicesPage() {
               };
             }
           }
-          templateRoot.render(<InvoiceTemplate2 data={templateData} exportMode />);
+          flushSync(() => {
+            templateRoot.render(<InvoiceTemplate2 data={templateData} exportMode />);
+          });
           await new Promise((resolve) =>
             requestAnimationFrame(() => requestAnimationFrame(resolve)),
           );
           try {
-            const dataUrl = await toPng(container.firstElementChild as HTMLElement, {
+            const target = container.firstElementChild as HTMLElement | null;
+            if (!target) {
+              throw new Error("Template 2 invoice failed to render.");
+            }
+            const dataUrl = await toPng(target, {
               pixelRatio: 2,
               cacheBust: true,
               backgroundColor: "#0a0a0a",
@@ -1059,12 +1073,23 @@ function InvoicesPage() {
                </tr>`
             : "";
 
-        const notesHtml = notes
-          ? `<div style="border-top:1pt solid #efefef;padding-top:24px;margin-top:0;">
-               <div style="font-size:8.5px;text-transform:uppercase;color:#737373;letter-spacing:1.5px;margin-bottom:8px;">Notes</div>
-               <div style="font-size:10px;color:#737373;line-height:1.4;white-space:pre-line;">${notes}</div>
-             </div>`
+        const paymentInstructionsHtml = paymentInstructions
+          ? `<div style="font-size:8.5px;text-transform:uppercase;color:#737373;letter-spacing:1.5px;margin-bottom:8px;">Payment Instructions</div>
+             <div style="font-size:10px;color:#737373;line-height:1.4;white-space:pre-line;${notes ? "margin-bottom:16px;" : ""}">${paymentInstructions}</div>`
           : "";
+
+        const notesContentHtml = notes
+          ? `<div style="font-size:8.5px;text-transform:uppercase;color:#737373;letter-spacing:1.5px;margin-bottom:8px;">Notes</div>
+             <div style="font-size:10px;color:#737373;line-height:1.4;white-space:pre-line;">${notes}</div>`
+          : "";
+
+        const notesHtml =
+          notes || paymentInstructions
+            ? `<div style="border-top:1pt solid #efefef;padding-top:24px;margin-top:0;">
+               ${paymentInstructionsHtml}
+               ${notesContentHtml}
+             </div>`
+            : "";
 
         const billingAddressHtml = billingAddress
           ? `<tr>
@@ -1089,6 +1114,7 @@ function InvoicesPage() {
             <!-- Header row -->
             <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1pt solid #efefef;padding-bottom:24px;margin-bottom:24px;">
               <div style="max-width:240px;">
+                ${isPro && invoiceData.brandLogo ? `<img src="${invoiceData.brandLogo}" alt="Logo" style="width:80px;max-height:40px;object-fit:contain;margin-bottom:8px;" />` : ""}
                 <div style="font-size:20px;font-weight:bold;margin-bottom:8px;">${companyName || "Your Company"}</div>
                 <div style="font-size:10px;color:#737373;line-height:1.4;white-space:pre-line;">${companyAddress || ""}</div>
               </div>
