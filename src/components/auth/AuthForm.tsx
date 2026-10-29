@@ -3,9 +3,8 @@ import { useState } from "react";
 
 import { supabase } from "@/lib/supabase";
 
-interface AuthFormProps {
-  mode: "login" | "signup";
-}
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export function AuthForm({ mode }: AuthFormProps) {
   const [providerLoading, setProviderLoading] = useState<"google" | "github" | null>(null);
@@ -33,6 +32,8 @@ export function AuthForm({ mode }: AuthFormProps) {
       setProviderLoading(null);
     }
   };
+
+  const isLoading = oauthProvider !== null;
 
   return (
     <div className="space-y-4">
@@ -120,7 +121,7 @@ function GoogleIcon() {
 
 function GitHubIcon() {
   return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 .5C5.73.5.99 5.24.99 11.5c0 4.85 3.15 8.96 7.52 10.41.55.1.75-.24.75-.53 0-.26-.01-1.13-.02-2.05-3.06.67-3.71-1.3-3.71-1.3-.5-1.27-1.22-1.6-1.22-1.6-1-.68.08-.67.08-.67 1.1.08 1.68 1.13 1.68 1.13.98 1.68 2.57 1.2 3.2.92.1-.71.38-1.2.69-1.48-2.44-.28-5.01-1.22-5.01-5.43 0-1.2.43-2.18 1.13-2.95-.11-.28-.49-1.4.11-2.92 0 0 .92-.3 3.02 1.13.88-.24 1.82-.36 2.76-.37.94.01 1.88.13 2.76.37 2.1-1.43 3.02-1.13 3.02-1.13.6 1.52.22 2.64.11 2.92.7.77 1.13 1.75 1.13 2.95 0 4.22-2.57 5.15-5.02 5.42.39.34.74 1 .74 2.02 0 1.46-.01 2.64-.01 3 0 .29.2.64.76.53A11.01 11.01 0 0 0 23 11.5C23 5.24 18.27.5 12 .5z" />
     </svg>
   );

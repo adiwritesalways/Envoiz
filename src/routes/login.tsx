@@ -13,6 +13,7 @@ export const Route = createFileRoute("/login")({
         name: "description",
         content: "Choose your account provider to continue to your workspace.",
       },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: LoginPage,
@@ -38,7 +39,7 @@ function LoginPage() {
       }
       mode="login"
     >
-      <AuthForm mode="login" />
+      <AuthForm />
     </AuthShell>
   );
 }

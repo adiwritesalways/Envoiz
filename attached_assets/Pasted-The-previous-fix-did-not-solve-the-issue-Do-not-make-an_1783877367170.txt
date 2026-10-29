@@ -1,0 +1,50 @@
+The previous fix did not solve the issue. Do not make any more changes to the router, hash navigation, sessionStorage, or scrolling logic until you identify the actual root cause.
+
+I want you to perform a full layout audit and fix the underlying problem, not patch around it.
+
+Current issues
+A huge white blank space appears after navigating to the Invoices page, especially after clicking "View All Invoices" from the Dashboard Overview.
+After this happens, I cannot scroll back up to the top.
+The left sidebar/navbar also scrolls away, which should never happen because it is supposed to stay fixed.
+Switching from any dashboard page to the Invoices page is slow and sometimes requires double-clicking.
+The invoice list section should also have a proper title.
+What I want you to investigate
+
+Do not assume the problem is hash navigation. Instead inspect the dashboard architecture.
+
+Find every element using:
+fixed
+absolute
+sticky
+overflow-auto
+overflow-y-auto
+overflow-hidden
+h-screen
+min-h-screen
+100vh
+scrollIntoView
+Verify that the dashboard has exactly one vertical scroll container.
+Ensure the browser window (window) never scrolls. Only the dashboard content area should scroll.
+Check whether any nested layout is creating a second scroll container or increasing the document height.
+Remove any unnecessary min-h-screen, h-screen, or nested overflow-auto containers inside the dashboard layout.
+Verify that the sidebar remains fixed while only the main content scrolls.
+Inspect the parent layout (DashboardLayout) and every dashboard page (Overview, Invoices, Customers, Settings, etc.) for conflicting height or overflow styles.
+Check whether any useEffect, animation, or route transition is forcing layout recalculation or scrolling.
+Verify that navigating between dashboard pages is a normal client-side route transition with no unnecessary remounts or duplicate navigation events.
+Add the heading above the invoice list:
+All Invoices
+Subtitle: Manage and track every invoice you've created.
+Important
+
+I do not want another workaround.
+
+I want the actual root cause identified and fixed.
+
+When you're done, explain:
+
+Which component caused the blank white area.
+Why the browser window was scrolling instead of the dashboard container.
+Which files were changed.
+Why this solution permanently fixes the issue.
+
+Do not stop after making one assumption. Trace the issue until the real cause is found and verify the fix by navigating from Overview → Invoices, Customers → Invoices, Settings → Invoices, and directly refreshing the Invoices page.

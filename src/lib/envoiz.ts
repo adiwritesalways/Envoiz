@@ -1,3 +1,5 @@
+import { envoizLpLogoDataUri } from "./envoiz-logo-data";
+
 export const brandName = "Envoiz";
 export const slogan = "Smart Invoicing for Freelancers and Businesses";
 export const siteUrl = import.meta.env.VITE_APP_URL || "https://envoiz.com";
