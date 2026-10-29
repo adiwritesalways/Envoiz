@@ -1,148 +1,227 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  Menu,
-  LayoutDashboard,
-  FileText,
-  Users,
-  Code2,
-  Webhook,
-  Settings,
-  ChevronRight,
-} from "lucide-react";
-import { type ReactNode } from "react";
-
-import { BrandLogo } from "@/components/BrandLogo";
+import React from "react";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
+import { LayoutDashboard, FileText, Users, Settings, Search, Menu, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { brandName, slogan } from "@/lib/envoiz";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/components/auth/auth-context";
+import { supabase } from "@/lib/supabase";
+import { BrandLogo } from "@/components/BrandLogo";
+import { CompanyOnboardingWizard } from "@/components/envoiz/CompanyOnboardingWizard";
+import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
 
 const navItems = [
-  { label: "Overview", to: "/dashboard", icon: LayoutDashboard },
-  { label: "Invoices", to: "/dashboard/invoices", icon: FileText },
-  { label: "Customers", to: "/dashboard/customers", icon: Users },
-  { label: "API", to: "/dashboard/api", icon: Code2 },
-  { label: "Webhooks", to: "/dashboard/webhooks", icon: Webhook },
-  { label: "Settings", to: "/dashboard/settings", icon: Settings },
-] as const;
+  { icon: LayoutDashboard, label: "Overview", to: "/dashboard" },
+  { icon: FileText, label: "Invoices", to: "/dashboard/invoices" },
+  { icon: Users, label: "Customers", to: "/dashboard/customers" },
+  { icon: Settings, label: "Settings", to: "/dashboard/settings" },
+];
 
-export function DashboardShell({ children }: { children: ReactNode }) {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+export function DashboardShell({ children }: { children: React.ReactNode }) {
+  const { user, refreshSession } = useAuth();
+  const { pathname } = useLocation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  const isActive = (to: string) =>
+    to === "/dashboard"
+      ? pathname === "/dashboard" || pathname === "/dashboard/"
+      : pathname.startsWith(to);
+
+  const currentPageLabel = navItems.find((item) => isActive(item.to))?.label ?? "Overview";
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      if (!event.target.files || event.target.files.length === 0 || !user) {
+        throw new Error("You must select an image to upload.");
+      }
+
+      const file = event.target.files[0];
+      if (
+        !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+        file.size > 5 * 1024 * 1024
+      ) {
+        throw new Error("Choose a JPG, PNG, or WebP image smaller than 5 MB.");
+      }
+      const fileExt = file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
+      const filePath = `${user.id}/avatar-${crypto.randomUUID()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl },
+      });
+
+      if (updateError) throw updateError;
+
+      toast.success("Profile picture updated!");
+      await refreshSession();
+    } catch (error: any) {
+      toast.error(error.message || "Error uploading image");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const name = user?.user_metadata?.full_name || user?.email || "User";
+  const initials = name.substring(0, 2).toUpperCase();
+  const avatarUrl = user?.user_metadata?.avatar_url;
+
+  const sidebarContent = (
+    <>
+      <div className="p-6 flex items-center justify-between">
+        <Link
+          to="/"
+          className="hover:opacity-80 transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <BrandLogo className="h-12 w-auto" />
+        </Link>
+        <button
+          className="md:hidden p-1 rounded-md text-muted-foreground hover:text-foreground"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="px-4 pb-4">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search..."
+            className="w-full bg-background pl-8 pr-12 rounded-md h-9 shadow-sm"
+          />
+          <div className="absolute right-1.5 top-1.5 flex h-6 items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘K</span>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-4 space-y-1">
+        {navItems.map((item) => (
+          <Link
+            key={item.label}
+            to={item.to}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              isActive(item.to)
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+
+      <div className="p-4 mt-auto">
+        <Card className="shadow-sm border-primary/20 bg-primary/5">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-sm font-semibold">Upgrade your plan</CardTitle>
+            <CardDescription className="text-xs">
+              Unlock advanced invoicing features and API limits.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <Button className="w-full text-xs h-8" variant="default">
+              Upgrade Now
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(0,0,0,0.05),transparent_24%),linear-gradient(to_bottom,var(--surface),var(--background))] text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-hairline bg-white/90 px-5 py-6 backdrop-blur-xl lg:flex">
-        <div className="flex items-center gap-3 px-1">
-          <BrandLogo className="h-9 w-auto" />
-        </div>
-        <p className="mt-3 px-1 text-[12.5px] leading-relaxed text-muted-foreground">{slogan}</p>
+    <div className="fixed inset-0 flex overflow-hidden bg-background">
+      <CompanyOnboardingWizard />
 
-        <nav className="mt-8 space-y-1">
-          {navItems.map((item) => {
-            const active = pathname === item.to;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                activeOptions={{ exact: item.to === "/dashboard" }}
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[14px] font-medium transition-colors",
-                  active
-                    ? "bg-foreground text-background shadow-[0_10px_28px_rgba(0,0,0,0.18)]"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{item.label}</span>
-                <ChevronRight className="ml-auto h-4 w-4 opacity-50" />
-              </Link>
-            );
-          })}
-        </nav>
+      {/* Mobile overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
-        <div className="mt-auto rounded-3xl border border-hairline bg-surface/70 p-4">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Workspace</p>
-          <div className="mt-3 text-[13px] font-medium">{brandName} Studio</div>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
-            Premium invoicing, API access, and customer management in one calm workspace.
-          </p>
-        </div>
+      {/* Sidebar — hidden on mobile, shown via drawer */}
+      <aside className="hidden md:flex w-64 flex-shrink-0 flex-col border-r border-border bg-muted/20">
+        {sidebarContent}
       </aside>
 
-      <div className="lg:pl-72">
-        <header className="sticky top-0 z-20 border-b border-hairline bg-white/80 backdrop-blur-xl">
-          <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
-            <div className="flex items-center gap-3">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="lg:hidden rounded-full">
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Open navigation</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side="left"
-                  className="w-[18rem] border-r border-hairline bg-white p-0"
-                >
-                  <SheetHeader className="border-b border-hairline px-5 py-5 text-left">
-                    <SheetTitle className="sr-only">Dashboard navigation</SheetTitle>
-                    <BrandLogo className="h-9 w-auto" />
-                    <p className="text-[12px] text-muted-foreground">{slogan}</p>
-                  </SheetHeader>
-                  <div className="p-4">
-                    <nav className="space-y-1">
-                      {navItems.map((item) => {
-                        const active = pathname === item.to;
-                        const Icon = item.icon;
-                        return (
-                          <Link
-                            key={item.to}
-                            to={item.to}
-                            activeOptions={{ exact: item.to === "/dashboard" }}
-                            className={cn(
-                              "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[14px] font-medium transition-colors",
-                              active
-                                ? "bg-foreground text-background"
-                                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                            )}
-                          >
-                            <Icon className="h-4 w-4 shrink-0" />
-                            {item.label}
-                          </Link>
-                        );
-                      })}
-                    </nav>
-                  </div>
-                </SheetContent>
-              </Sheet>
+      {/* Mobile slide-over drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-muted/20 transition-transform duration-300 md:hidden ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {sidebarContent}
+      </aside>
 
-              <div className="lg:hidden">
-                <BrandLogo className="h-8 w-auto" />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Link
-                to="/"
-                className="hidden rounded-full border border-hairline bg-white px-4 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-secondary sm:inline-flex"
-              >
-                Home
-              </Link>
-              <Link
-                to="/dashboard/invoices"
-                className="inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition-colors hover:opacity-90"
-              >
-                New invoice
-              </Link>
-            </div>
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+        {/* Header */}
+        <header className="h-14 flex-shrink-0 flex items-center justify-between border-b border-border px-4 md:px-6 bg-background">
+          <div className="flex items-center gap-3">
+            <button
+              className="md:hidden p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div className="text-sm font-medium text-muted-foreground">{currentPageLabel}</div>
+          </div>
+          <div className="flex items-center gap-4">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              disabled={uploading}
+            />
+            <Avatar
+              className={`h-8 w-8 cursor-pointer transition-opacity ${uploading ? "opacity-50" : "hover:opacity-80"}`}
+              onClick={handleAvatarClick}
+              title="Click to change profile picture"
+            >
+              <AvatarImage src={avatarUrl} />
+              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
           </div>
         </header>
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-7xl">{children}</div>
-        </main>
-      </div>
+        {/* Content */}
+        <div
+          id="dashboard-scroll"
+          className="flex-1 overflow-auto px-4 py-5 md:px-5 md:py-6 lg:px-8 lg:py-8 xl:px-10"
+        >
+          <div className="mx-auto w-full max-w-[1760px]">{children}</div>
+        </div>
+      </main>
     </div>
   );
 }

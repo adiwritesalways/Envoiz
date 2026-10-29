@@ -1,114 +1,96 @@
-import { useState, type FormEvent } from "react";
-import { Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useState } from "react";
+
+import { supabase } from "@/lib/supabase";
 
 interface AuthFormProps {
   mode: "login" | "signup";
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [providerLoading, setProviderLoading] = useState<"google" | "github" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const redirectTo =
+    typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : "/auth/callback";
 
-  const onSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setTimeout(() => setLoading(false), 900);
+  const startOAuth = async (provider: "google" | "github") => {
+    setProviderLoading(provider);
+    setError(null);
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo },
+      });
+      if (authError) throw authError;
+      if (data.url) window.location.assign(data.url);
+      else throw new Error(`Unable to start ${provider} sign in.`);
+    } catch (authError) {
+      setError(
+        authError instanceof Error
+          ? authError.message
+          : "Sign in could not be started. Please try again.",
+      );
+      setProviderLoading(null);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <label htmlFor="email" className="text-[12.5px] font-medium text-foreground">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="you@company.com"
-            className="w-full h-11 px-3.5 rounded-lg bg-white border border-hairline text-[14px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/30 transition"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-[12.5px] font-medium text-foreground">
-              Password
-            </label>
-            {mode === "login" && (
-              <a
-                href="#"
-                className="text-[12px] text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Forgot password?
-              </a>
-            )}
-          </div>
-          <div className="relative">
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              required
-              minLength={8}
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              placeholder={mode === "signup" ? "At least 8 characters" : "Enter your password"}
-              className="w-full h-11 pl-3.5 pr-10 rounded-lg bg-white border border-hairline text-[14px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black/30 transition"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((s) => !s)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-black text-white text-[14px] font-medium hover:bg-black/85 active:bg-black transition-colors shadow-[0_8px_24px_rgba(0,0,0,0.18)] disabled:opacity-70 disabled:cursor-not-allowed"
+    <div className="space-y-4">
+      <p className="text-[13px] leading-6 text-muted-foreground">
+        {mode === "signup"
+          ? "Create your Envoiz account securely with Google or GitHub."
+          : "Continue to your Envoiz workspace with Google or GitHub."}
+      </p>
+      <div className="auth-provider-list">
+        <SocialButton
+          provider="google"
+          loading={providerLoading === "google"}
+          disabled={providerLoading !== null}
+          onClick={() => void startOAuth("google")}
+        />
+        <SocialButton
+          provider="github"
+          loading={providerLoading === "github"}
+          disabled={providerLoading !== null}
+          onClick={() => void startOAuth("github")}
+        />
+      </div>
+      {error && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] leading-relaxed text-rose-700"
         >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              {mode === "login" ? "Sign in" : "Create account"}
-              <ArrowRight className="h-4 w-4" />
-            </>
-          )}
-        </button>
-      </form>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-hairline" />
+          {error}
         </div>
-        <div className="relative flex justify-center text-[11.5px] uppercase tracking-[0.18em]">
-          <span className="bg-white px-3 text-muted-foreground">or continue with</span>
-        </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <SocialButton provider="google" />
-        <SocialButton provider="github" />
-      </div>
+      )}
     </div>
   );
 }
 
-function SocialButton({ provider }: { provider: "google" | "github" }) {
+function SocialButton({
+  provider,
+  loading,
+  disabled,
+  onClick,
+}: {
+  provider: "google" | "github";
+  loading: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
   const label = provider === "google" ? "Google" : "GitHub";
+
   return (
-    <button
-      type="button"
-      className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl border border-hairline bg-white text-[13.5px] font-medium text-foreground transition-colors hover:bg-secondary"
-    >
-      {provider === "google" ? <GoogleIcon /> : <GitHubIcon />}
-      {label}
+    <button type="button" onClick={onClick} disabled={disabled} className="auth-provider-button">
+      <span className="auth-provider-mark">
+        {provider === "google" ? <GoogleIcon /> : <GitHubIcon />}
+      </span>
+      <span>{loading ? "Connecting…" : `Continue with ${label}`}</span>
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <ArrowRight className="auth-provider-arrow" size={16} />
+      )}
     </button>
   );
 }
@@ -117,20 +99,20 @@ function GoogleIcon() {
   return (
     <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
       <path
-        fill="#EA4335"
-        d="M12 10.2v3.9h5.5c-.24 1.4-1.66 4.1-5.5 4.1-3.3 0-6-2.74-6-6.1s2.7-6.1 6-6.1c1.88 0 3.14.8 3.86 1.48l2.64-2.54C16.86 3.4 14.66 2.4 12 2.4 6.86 2.4 2.7 6.56 2.7 11.7s4.16 9.3 9.3 9.3c5.36 0 8.92-3.76 8.92-9.06 0-.6-.06-1.06-.16-1.54H12z"
-      />
-      <path
         fill="#4285F4"
-        d="M4.85 7.99 8.07 10.36A6 6 0 0 1 12 5.7c1.46 0 2.79.52 3.82 1.38l2.72-2.72A10.17 10.17 0 0 0 12 2.4 9.97 9.97 0 0 0 4.85 7.99z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M12 20.99c2.7 0 4.97-.89 6.63-2.42l-3.06-2.38c-.9.62-2.06 1-3.57 1-3.84 0-5.26-2.71-5.5-4.1l-3.23 2.42A9.96 9.96 0 0 0 12 20.99z"
+        d="M21.35 11.1h-9.18v2.97h5.28c-.23 1.4-1.64 4.09-5.28 4.09-3.18 0-5.78-2.63-5.78-5.86s2.6-5.86 5.78-5.86c1.82 0 3.04.77 3.74 1.43l2.55-2.46C16.57 3.83 14.64 3 12.17 3 6.92 3 2.67 7.2 2.67 12.38c0 5.18 4.25 9.38 9.5 9.38 5.48 0 9.12-3.82 9.12-9.2 0-.62-.06-1.09-.14-1.46z"
       />
       <path
         fill="#34A853"
-        d="M18.63 18.57c1.75-1.61 2.87-4 2.87-6.87 0-.63-.06-1.22-.16-1.8H12v3.9h5.5c-.25 1.45-1.08 2.61-2.29 3.47l3.42 2.3z"
+        d="m3.94 7.95 3.15 2.31A5.68 5.68 0 0 1 12.17 6c1.36 0 2.59.49 3.56 1.29l2.58-2.48A9.08 9.08 0 0 0 12.17 3C8.07 3 4.55 5.3 3.94 7.95z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M12.17 21.76c2.47 0 4.54-.79 6.06-2.16l-2.8-2.19c-.83.55-1.95.94-3.26.94-2.54 0-4.69-1.65-5.45-3.86L3.47 18.1c1.45 2.87 4.48 3.66 8.7 3.66z"
+      />
+      <path
+        fill="#EA4335"
+        d="M21.35 11.1H12.17v2.97h5.28c-.35 2.08-2.08 3.36-4.39 3.36-2.54 0-4.69-1.65-5.45-3.86L3.47 18.1c1.45 2.87 4.48 3.66 8.7 3.66 5.48 0 9.12-3.82 9.12-9.2 0-.62-.06-1.09-.14-1.46z"
       />
     </svg>
   );

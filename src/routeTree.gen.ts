@@ -9,20 +9,84 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as ConfirmEmailChangeRouteImport } from './routes/confirm-email-change'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as GeneratePreviewRouteImport } from './routes/generate-preview'
+import { Route as InvoiceRouteImport } from './routes/invoice'
+import { Route as InvoiceTemplateRouteImport } from './routes/invoice-template'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ResourcesRouteImport } from './routes/resources'
+import { Route as SecurityRouteImport } from './routes/security'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as TemplatePreviewRouteImport } from './routes/template-preview'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as DashboardWebhooksRouteImport } from './routes/dashboard/webhooks'
-import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
-import { Route as DashboardInvoicesRouteImport } from './routes/dashboard/invoices'
-import { Route as DashboardCustomersRouteImport } from './routes/dashboard/customers'
-import { Route as DashboardApiRouteImport } from './routes/dashboard/api'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
+import { Route as DashboardApiRouteImport } from './routes/dashboard/api'
+import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
+import { Route as DashboardClientsRouteImport } from './routes/dashboard/clients'
+import { Route as DashboardCustomersRouteImport } from './routes/dashboard/customers'
+import { Route as DashboardInvoicesRouteImport } from './routes/dashboard/invoices'
+import { Route as DashboardOverviewRouteImport } from './routes/dashboard/overview'
+import { Route as DashboardPaymentsRouteImport } from './routes/dashboard/payments'
+import { Route as DashboardReportsRouteImport } from './routes/dashboard/reports'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as DashboardWebhooksRouteImport } from './routes/dashboard/webhooks'
+import { Route as PaymentCancelledRouteImport } from './routes/payment/cancelled'
+import { Route as PaymentFailedRouteImport } from './routes/payment/failed'
+import { Route as PaymentSuccessRouteImport } from './routes/payment/success'
+import { Route as ResourcesBlogRouteImport } from './routes/resources/blog'
+import { Route as ResourcesDocsRouteImport } from './routes/resources/docs'
+import { Route as ResourcesStatusRouteImport } from './routes/resources/status'
+import { Route as ResourcesSupportRouteImport } from './routes/resources/support'
+import { Route as DashboardInvoicesInvoiceIdRouteImport } from './routes/dashboard/invoices/$invoiceId'
+import { Route as ResourcesBlogIndexRouteImport } from './routes/resources/blog/index'
+import { Route as ResourcesBlogSlugRouteImport } from './routes/resources/blog/$slug'
 
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmEmailChangeRoute = ConfirmEmailChangeRouteImport.update({
+  id: '/confirm-email-change',
+  path: '/confirm-email-change',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneratePreviewRoute = GeneratePreviewRouteImport.update({
+  id: '/generate-preview',
+  path: '/generate-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvoiceRoute = InvoiceRouteImport.update({
+  id: '/invoice',
+  path: '/invoice',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvoiceTemplateRoute = InvoiceTemplateRouteImport.update({
+  id: '/invoice-template',
+  path: '/invoice-template',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -30,141 +94,478 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesRoute = ResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatePreviewRoute = TemplatePreviewRouteImport.update({
+  id: '/template-preview',
+  path: '/template-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/dashboard/',
-  path: '/dashboard/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardWebhooksRoute = DashboardWebhooksRouteImport.update({
-  id: '/dashboard/webhooks',
-  path: '/dashboard/webhooks',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  id: '/dashboard/settings',
-  path: '/dashboard/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardInvoicesRoute = DashboardInvoicesRouteImport.update({
-  id: '/dashboard/invoices',
-  path: '/dashboard/invoices',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardCustomersRoute = DashboardCustomersRouteImport.update({
-  id: '/dashboard/customers',
-  path: '/dashboard/customers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardApiRoute = DashboardApiRouteImport.update({
-  id: '/dashboard/api',
-  path: '/dashboard/api',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
-  id: '/dashboard/_layout',
-  path: '/dashboard',
+  id: '/_layout',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardApiRoute = DashboardApiRouteImport.update({
+  id: '/api',
+  path: '/api',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardBillingRoute = DashboardBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardClientsRoute = DashboardClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCustomersRoute = DashboardCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardInvoicesRoute = DashboardInvoicesRouteImport.update({
+  id: '/invoices',
+  path: '/invoices',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardOverviewRoute = DashboardOverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPaymentsRoute = DashboardPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardReportsRoute = DashboardReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardWebhooksRoute = DashboardWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const PaymentCancelledRoute = PaymentCancelledRouteImport.update({
+  id: '/payment/cancelled',
+  path: '/payment/cancelled',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentFailedRoute = PaymentFailedRouteImport.update({
+  id: '/payment/failed',
+  path: '/payment/failed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentSuccessRoute = PaymentSuccessRouteImport.update({
+  id: '/payment/success',
+  path: '/payment/success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesBlogRoute = ResourcesBlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const ResourcesDocsRoute = ResourcesDocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const ResourcesStatusRoute = ResourcesStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const ResourcesSupportRoute = ResourcesSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => ResourcesRoute,
+} as any)
+const DashboardInvoicesInvoiceIdRoute =
+  DashboardInvoicesInvoiceIdRouteImport.update({
+    id: '/$invoiceId',
+    path: '/$invoiceId',
+    getParentRoute: () => DashboardInvoicesRoute,
+  } as any)
+const ResourcesBlogIndexRoute = ResourcesBlogIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ResourcesBlogRoute,
+} as any)
+const ResourcesBlogSlugRoute = ResourcesBlogSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ResourcesBlogRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/checkout': typeof CheckoutRoute
+  '/confirm-email-change': typeof ConfirmEmailChangeRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/generate-preview': typeof GeneratePreviewRoute
+  '/invoice': typeof InvoiceRoute
+  '/invoice-template': typeof InvoiceTemplateRoute
   '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/resources': typeof ResourcesRouteWithChildren
+  '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
-  '/dashboard': typeof DashboardLayoutRoute
+  '/template-preview': typeof TemplatePreviewRoute
+  '/terms': typeof TermsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/dashboard/api': typeof DashboardApiRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/clients': typeof DashboardClientsRoute
   '/dashboard/customers': typeof DashboardCustomersRoute
-  '/dashboard/invoices': typeof DashboardInvoicesRoute
+  '/dashboard/invoices': typeof DashboardInvoicesRouteWithChildren
+  '/dashboard/overview': typeof DashboardOverviewRoute
+  '/dashboard/payments': typeof DashboardPaymentsRoute
+  '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/webhooks': typeof DashboardWebhooksRoute
+  '/payment/cancelled': typeof PaymentCancelledRoute
+  '/payment/failed': typeof PaymentFailedRoute
+  '/payment/success': typeof PaymentSuccessRoute
+  '/resources/blog': typeof ResourcesBlogRouteWithChildren
+  '/resources/docs': typeof ResourcesDocsRoute
+  '/resources/status': typeof ResourcesStatusRoute
+  '/resources/support': typeof ResourcesSupportRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/invoices/$invoiceId': typeof DashboardInvoicesInvoiceIdRoute
+  '/resources/blog/$slug': typeof ResourcesBlogSlugRoute
+  '/resources/blog/': typeof ResourcesBlogIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/checkout': typeof CheckoutRoute
+  '/confirm-email-change': typeof ConfirmEmailChangeRoute
+  '/generate-preview': typeof GeneratePreviewRoute
+  '/invoice': typeof InvoiceRoute
+  '/invoice-template': typeof InvoiceTemplateRoute
   '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/resources': typeof ResourcesRouteWithChildren
+  '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/template-preview': typeof TemplatePreviewRoute
+  '/terms': typeof TermsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/api': typeof DashboardApiRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/clients': typeof DashboardClientsRoute
   '/dashboard/customers': typeof DashboardCustomersRoute
-  '/dashboard/invoices': typeof DashboardInvoicesRoute
+  '/dashboard/invoices': typeof DashboardInvoicesRouteWithChildren
+  '/dashboard/overview': typeof DashboardOverviewRoute
+  '/dashboard/payments': typeof DashboardPaymentsRoute
+  '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/webhooks': typeof DashboardWebhooksRoute
+  '/payment/cancelled': typeof PaymentCancelledRoute
+  '/payment/failed': typeof PaymentFailedRoute
+  '/payment/success': typeof PaymentSuccessRoute
+  '/resources/docs': typeof ResourcesDocsRoute
+  '/resources/status': typeof ResourcesStatusRoute
+  '/resources/support': typeof ResourcesSupportRoute
+  '/dashboard/invoices/$invoiceId': typeof DashboardInvoicesInvoiceIdRoute
+  '/resources/blog/$slug': typeof ResourcesBlogSlugRoute
+  '/resources/blog': typeof ResourcesBlogIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/checkout': typeof CheckoutRoute
+  '/confirm-email-change': typeof ConfirmEmailChangeRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/generate-preview': typeof GeneratePreviewRoute
+  '/invoice': typeof InvoiceRoute
+  '/invoice-template': typeof InvoiceTemplateRoute
   '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/resources': typeof ResourcesRouteWithChildren
+  '/security': typeof SecurityRoute
   '/signup': typeof SignupRoute
+  '/template-preview': typeof TemplatePreviewRoute
+  '/terms': typeof TermsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/dashboard/_layout': typeof DashboardLayoutRoute
   '/dashboard/api': typeof DashboardApiRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/clients': typeof DashboardClientsRoute
   '/dashboard/customers': typeof DashboardCustomersRoute
-  '/dashboard/invoices': typeof DashboardInvoicesRoute
+  '/dashboard/invoices': typeof DashboardInvoicesRouteWithChildren
+  '/dashboard/overview': typeof DashboardOverviewRoute
+  '/dashboard/payments': typeof DashboardPaymentsRoute
+  '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/webhooks': typeof DashboardWebhooksRoute
+  '/payment/cancelled': typeof PaymentCancelledRoute
+  '/payment/failed': typeof PaymentFailedRoute
+  '/payment/success': typeof PaymentSuccessRoute
+  '/resources/blog': typeof ResourcesBlogRouteWithChildren
+  '/resources/docs': typeof ResourcesDocsRoute
+  '/resources/status': typeof ResourcesStatusRoute
+  '/resources/support': typeof ResourcesSupportRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/invoices/$invoiceId': typeof DashboardInvoicesInvoiceIdRoute
+  '/resources/blog/$slug': typeof ResourcesBlogSlugRoute
+  '/resources/blog/': typeof ResourcesBlogIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/login'
-    | '/signup'
+    | '/about'
+    | '/checkout'
+    | '/confirm-email-change'
     | '/dashboard'
+    | '/generate-preview'
+    | '/invoice'
+    | '/invoice-template'
+    | '/login'
+    | '/privacy-policy'
+    | '/reset-password'
+    | '/resources'
+    | '/security'
+    | '/signup'
+    | '/template-preview'
+    | '/terms'
+    | '/auth/callback'
     | '/dashboard/api'
+    | '/dashboard/billing'
+    | '/dashboard/clients'
     | '/dashboard/customers'
     | '/dashboard/invoices'
+    | '/dashboard/overview'
+    | '/dashboard/payments'
+    | '/dashboard/reports'
     | '/dashboard/settings'
     | '/dashboard/webhooks'
+    | '/payment/cancelled'
+    | '/payment/failed'
+    | '/payment/success'
+    | '/resources/blog'
+    | '/resources/docs'
+    | '/resources/status'
+    | '/resources/support'
     | '/dashboard/'
+    | '/dashboard/invoices/$invoiceId'
+    | '/resources/blog/$slug'
+    | '/resources/blog/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
+    | '/checkout'
+    | '/confirm-email-change'
+    | '/generate-preview'
+    | '/invoice'
+    | '/invoice-template'
     | '/login'
+    | '/privacy-policy'
+    | '/reset-password'
+    | '/resources'
+    | '/security'
     | '/signup'
+    | '/template-preview'
+    | '/terms'
+    | '/auth/callback'
     | '/dashboard'
     | '/dashboard/api'
+    | '/dashboard/billing'
+    | '/dashboard/clients'
     | '/dashboard/customers'
     | '/dashboard/invoices'
+    | '/dashboard/overview'
+    | '/dashboard/payments'
+    | '/dashboard/reports'
     | '/dashboard/settings'
     | '/dashboard/webhooks'
+    | '/payment/cancelled'
+    | '/payment/failed'
+    | '/payment/success'
+    | '/resources/docs'
+    | '/resources/status'
+    | '/resources/support'
+    | '/dashboard/invoices/$invoiceId'
+    | '/resources/blog/$slug'
+    | '/resources/blog'
   id:
     | '__root__'
     | '/'
+    | '/about'
+    | '/checkout'
+    | '/confirm-email-change'
+    | '/dashboard'
+    | '/generate-preview'
+    | '/invoice'
+    | '/invoice-template'
     | '/login'
+    | '/privacy-policy'
+    | '/reset-password'
+    | '/resources'
+    | '/security'
     | '/signup'
+    | '/template-preview'
+    | '/terms'
+    | '/auth/callback'
     | '/dashboard/_layout'
     | '/dashboard/api'
+    | '/dashboard/billing'
+    | '/dashboard/clients'
     | '/dashboard/customers'
     | '/dashboard/invoices'
+    | '/dashboard/overview'
+    | '/dashboard/payments'
+    | '/dashboard/reports'
     | '/dashboard/settings'
     | '/dashboard/webhooks'
+    | '/payment/cancelled'
+    | '/payment/failed'
+    | '/payment/success'
+    | '/resources/blog'
+    | '/resources/docs'
+    | '/resources/status'
+    | '/resources/support'
     | '/dashboard/'
+    | '/dashboard/invoices/$invoiceId'
+    | '/resources/blog/$slug'
+    | '/resources/blog/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  CheckoutRoute: typeof CheckoutRoute
+  ConfirmEmailChangeRoute: typeof ConfirmEmailChangeRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
+  GeneratePreviewRoute: typeof GeneratePreviewRoute
+  InvoiceRoute: typeof InvoiceRoute
+  InvoiceTemplateRoute: typeof InvoiceTemplateRoute
   LoginRoute: typeof LoginRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  ResourcesRoute: typeof ResourcesRouteWithChildren
+  SecurityRoute: typeof SecurityRoute
   SignupRoute: typeof SignupRoute
-  DashboardLayoutRoute: typeof DashboardLayoutRoute
-  DashboardApiRoute: typeof DashboardApiRoute
-  DashboardCustomersRoute: typeof DashboardCustomersRoute
-  DashboardInvoicesRoute: typeof DashboardInvoicesRoute
-  DashboardSettingsRoute: typeof DashboardSettingsRoute
-  DashboardWebhooksRoute: typeof DashboardWebhooksRoute
-  DashboardIndexRoute: typeof DashboardIndexRoute
+  TemplatePreviewRoute: typeof TemplatePreviewRoute
+  TermsRoute: typeof TermsRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  PaymentCancelledRoute: typeof PaymentCancelledRoute
+  PaymentFailedRoute: typeof PaymentFailedRoute
+  PaymentSuccessRoute: typeof PaymentSuccessRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirm-email-change': {
+      id: '/confirm-email-change'
+      path: '/confirm-email-change'
+      fullPath: '/confirm-email-change'
+      preLoaderRoute: typeof ConfirmEmailChangeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/generate-preview': {
+      id: '/generate-preview'
+      path: '/generate-preview'
+      fullPath: '/generate-preview'
+      preLoaderRoute: typeof GeneratePreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invoice': {
+      id: '/invoice'
+      path: '/invoice'
+      fullPath: '/invoice'
+      preLoaderRoute: typeof InvoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invoice-template': {
+      id: '/invoice-template'
+      path: '/invoice-template'
+      fullPath: '/invoice-template'
+      preLoaderRoute: typeof InvoiceTemplateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -174,76 +575,317 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/template-preview': {
+      id: '/template-preview'
+      path: '/template-preview'
+      fullPath: '/template-preview'
+      preLoaderRoute: typeof TemplatePreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
       id: '/dashboard/'
-      path: '/dashboard'
+      path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/webhooks': {
-      id: '/dashboard/webhooks'
-      path: '/dashboard/webhooks'
-      fullPath: '/dashboard/webhooks'
-      preLoaderRoute: typeof DashboardWebhooksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/settings': {
-      id: '/dashboard/settings'
-      path: '/dashboard/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof DashboardSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/invoices': {
-      id: '/dashboard/invoices'
-      path: '/dashboard/invoices'
-      fullPath: '/dashboard/invoices'
-      preLoaderRoute: typeof DashboardInvoicesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/customers': {
-      id: '/dashboard/customers'
-      path: '/dashboard/customers'
-      fullPath: '/dashboard/customers'
-      preLoaderRoute: typeof DashboardCustomersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/api': {
-      id: '/dashboard/api'
-      path: '/dashboard/api'
-      fullPath: '/dashboard/api'
-      preLoaderRoute: typeof DashboardApiRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/dashboard/_layout': {
       id: '/dashboard/_layout'
-      path: '/dashboard'
+      path: ''
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardLayoutRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/api': {
+      id: '/dashboard/api'
+      path: '/api'
+      fullPath: '/dashboard/api'
+      preLoaderRoute: typeof DashboardApiRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/billing': {
+      id: '/dashboard/billing'
+      path: '/billing'
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof DashboardBillingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/clients': {
+      id: '/dashboard/clients'
+      path: '/clients'
+      fullPath: '/dashboard/clients'
+      preLoaderRoute: typeof DashboardClientsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/customers': {
+      id: '/dashboard/customers'
+      path: '/customers'
+      fullPath: '/dashboard/customers'
+      preLoaderRoute: typeof DashboardCustomersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/invoices': {
+      id: '/dashboard/invoices'
+      path: '/invoices'
+      fullPath: '/dashboard/invoices'
+      preLoaderRoute: typeof DashboardInvoicesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/overview': {
+      id: '/dashboard/overview'
+      path: '/overview'
+      fullPath: '/dashboard/overview'
+      preLoaderRoute: typeof DashboardOverviewRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/payments': {
+      id: '/dashboard/payments'
+      path: '/payments'
+      fullPath: '/dashboard/payments'
+      preLoaderRoute: typeof DashboardPaymentsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/reports': {
+      id: '/dashboard/reports'
+      path: '/reports'
+      fullPath: '/dashboard/reports'
+      preLoaderRoute: typeof DashboardReportsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/webhooks': {
+      id: '/dashboard/webhooks'
+      path: '/webhooks'
+      fullPath: '/dashboard/webhooks'
+      preLoaderRoute: typeof DashboardWebhooksRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/payment/cancelled': {
+      id: '/payment/cancelled'
+      path: '/payment/cancelled'
+      fullPath: '/payment/cancelled'
+      preLoaderRoute: typeof PaymentCancelledRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/payment/failed': {
+      id: '/payment/failed'
+      path: '/payment/failed'
+      fullPath: '/payment/failed'
+      preLoaderRoute: typeof PaymentFailedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment/success': {
+      id: '/payment/success'
+      path: '/payment/success'
+      fullPath: '/payment/success'
+      preLoaderRoute: typeof PaymentSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources/blog': {
+      id: '/resources/blog'
+      path: '/blog'
+      fullPath: '/resources/blog'
+      preLoaderRoute: typeof ResourcesBlogRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/resources/docs': {
+      id: '/resources/docs'
+      path: '/docs'
+      fullPath: '/resources/docs'
+      preLoaderRoute: typeof ResourcesDocsRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/resources/status': {
+      id: '/resources/status'
+      path: '/status'
+      fullPath: '/resources/status'
+      preLoaderRoute: typeof ResourcesStatusRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/resources/support': {
+      id: '/resources/support'
+      path: '/support'
+      fullPath: '/resources/support'
+      preLoaderRoute: typeof ResourcesSupportRouteImport
+      parentRoute: typeof ResourcesRoute
+    }
+    '/dashboard/invoices/$invoiceId': {
+      id: '/dashboard/invoices/$invoiceId'
+      path: '/$invoiceId'
+      fullPath: '/dashboard/invoices/$invoiceId'
+      preLoaderRoute: typeof DashboardInvoicesInvoiceIdRouteImport
+      parentRoute: typeof DashboardInvoicesRoute
+    }
+    '/resources/blog/': {
+      id: '/resources/blog/'
+      path: '/'
+      fullPath: '/resources/blog/'
+      preLoaderRoute: typeof ResourcesBlogIndexRouteImport
+      parentRoute: typeof ResourcesBlogRoute
+    }
+    '/resources/blog/$slug': {
+      id: '/resources/blog/$slug'
+      path: '/$slug'
+      fullPath: '/resources/blog/$slug'
+      preLoaderRoute: typeof ResourcesBlogSlugRouteImport
+      parentRoute: typeof ResourcesBlogRoute
     }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  LoginRoute: LoginRoute,
-  SignupRoute: SignupRoute,
+interface DashboardInvoicesRouteChildren {
+  DashboardInvoicesInvoiceIdRoute: typeof DashboardInvoicesInvoiceIdRoute
+}
+
+const DashboardInvoicesRouteChildren: DashboardInvoicesRouteChildren = {
+  DashboardInvoicesInvoiceIdRoute: DashboardInvoicesInvoiceIdRoute,
+}
+
+const DashboardInvoicesRouteWithChildren =
+  DashboardInvoicesRoute._addFileChildren(DashboardInvoicesRouteChildren)
+
+interface DashboardRouteChildren {
+  DashboardLayoutRoute: typeof DashboardLayoutRoute
+  DashboardApiRoute: typeof DashboardApiRoute
+  DashboardBillingRoute: typeof DashboardBillingRoute
+  DashboardClientsRoute: typeof DashboardClientsRoute
+  DashboardCustomersRoute: typeof DashboardCustomersRoute
+  DashboardInvoicesRoute: typeof DashboardInvoicesRouteWithChildren
+  DashboardOverviewRoute: typeof DashboardOverviewRoute
+  DashboardPaymentsRoute: typeof DashboardPaymentsRoute
+  DashboardReportsRoute: typeof DashboardReportsRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardWebhooksRoute: typeof DashboardWebhooksRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardLayoutRoute: DashboardLayoutRoute,
   DashboardApiRoute: DashboardApiRoute,
+  DashboardBillingRoute: DashboardBillingRoute,
+  DashboardClientsRoute: DashboardClientsRoute,
   DashboardCustomersRoute: DashboardCustomersRoute,
-  DashboardInvoicesRoute: DashboardInvoicesRoute,
+  DashboardInvoicesRoute: DashboardInvoicesRouteWithChildren,
+  DashboardOverviewRoute: DashboardOverviewRoute,
+  DashboardPaymentsRoute: DashboardPaymentsRoute,
+  DashboardReportsRoute: DashboardReportsRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardWebhooksRoute: DashboardWebhooksRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
+interface ResourcesBlogRouteChildren {
+  ResourcesBlogSlugRoute: typeof ResourcesBlogSlugRoute
+  ResourcesBlogIndexRoute: typeof ResourcesBlogIndexRoute
+}
+
+const ResourcesBlogRouteChildren: ResourcesBlogRouteChildren = {
+  ResourcesBlogSlugRoute: ResourcesBlogSlugRoute,
+  ResourcesBlogIndexRoute: ResourcesBlogIndexRoute,
+}
+
+const ResourcesBlogRouteWithChildren = ResourcesBlogRoute._addFileChildren(
+  ResourcesBlogRouteChildren,
+)
+
+interface ResourcesRouteChildren {
+  ResourcesBlogRoute: typeof ResourcesBlogRouteWithChildren
+  ResourcesDocsRoute: typeof ResourcesDocsRoute
+  ResourcesStatusRoute: typeof ResourcesStatusRoute
+  ResourcesSupportRoute: typeof ResourcesSupportRoute
+}
+
+const ResourcesRouteChildren: ResourcesRouteChildren = {
+  ResourcesBlogRoute: ResourcesBlogRouteWithChildren,
+  ResourcesDocsRoute: ResourcesDocsRoute,
+  ResourcesStatusRoute: ResourcesStatusRoute,
+  ResourcesSupportRoute: ResourcesSupportRoute,
+}
+
+const ResourcesRouteWithChildren = ResourcesRoute._addFileChildren(
+  ResourcesRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  CheckoutRoute: CheckoutRoute,
+  ConfirmEmailChangeRoute: ConfirmEmailChangeRoute,
+  DashboardRoute: DashboardRouteWithChildren,
+  GeneratePreviewRoute: GeneratePreviewRoute,
+  InvoiceRoute: InvoiceRoute,
+  InvoiceTemplateRoute: InvoiceTemplateRoute,
+  LoginRoute: LoginRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  ResourcesRoute: ResourcesRouteWithChildren,
+  SecurityRoute: SecurityRoute,
+  SignupRoute: SignupRoute,
+  TemplatePreviewRoute: TemplatePreviewRoute,
+  TermsRoute: TermsRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
+  PaymentCancelledRoute: PaymentCancelledRoute,
+  PaymentFailedRoute: PaymentFailedRoute,
+  PaymentSuccessRoute: PaymentSuccessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

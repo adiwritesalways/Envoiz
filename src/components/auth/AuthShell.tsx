@@ -1,51 +1,99 @@
 import { Link } from "@tanstack/react-router";
+import { Check, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
-
 import { BrandLogo } from "@/components/BrandLogo";
-import { brandName } from "@/lib/envoiz";
 
 interface AuthShellProps {
   title: string;
   subtitle: string;
   children: ReactNode;
   footer: ReactNode;
+  mode?: "login" | "signup" | "forgot";
 }
 
-export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
+function Brand({ mobile = false }: { mobile?: boolean }) {
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased relative overflow-hidden">
-      <div className="absolute inset-0 grid-bg pointer-events-none opacity-60" />
-      <main className="relative mx-auto flex min-h-screen w-full max-w-[480px] items-center px-4 py-10 sm:px-6">
-        <section className="w-full animate-fade-up">
-          <div className="mb-8 text-center">
-            <Link to="/" className="inline-flex items-center justify-center" aria-label={brandName}>
-              <BrandLogo className="h-11 w-auto" />
-            </Link>
-            <h1 className="mt-6 text-[32px] font-semibold tracking-[-0.03em] leading-tight">
-              {title}
-            </h1>
-            <p className="mt-2 text-[14.5px] text-muted-foreground">{subtitle}</p>
+    <Link className={`auth-brand${mobile ? " auth-brand-mobile" : ""}`} to="/">
+      <BrandLogo className="auth-brand-logo" />
+    </Link>
+  );
+}
+
+function AuthAside() {
+  return (
+    <aside className="auth-aside">
+      <Brand />
+      <div className="auth-aside-orbit" aria-hidden="true" />
+      <div className="auth-aside-content">
+        <h1>
+          A little less chasing.
+          <br />
+          <span>A lot more clarity.</span>
+        </h1>
+        <p>Invoices, clients, and exports—together in a workspace made for the way you work.</p>
+        <div className="auth-payment-card">
+          <div className="auth-payment-top">
+            <span className="auth-payment-icon">
+              <Check size={17} />
+            </span>
+            <span>INVOICE SAVED</span>
+            <span className="auth-payment-status">READY</span>
           </div>
-
-          <div className="rounded-[2rem] border border-hairline bg-white/90 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_20px_60px_rgba(0,0,0,0.08)] sm:p-8">
-            {children}
+          <div className="auth-payment-details">
+            <span>Northlight Studio</span>
+            <b>$4,850.00</b>
           </div>
+          <div className="auth-payment-rule">
+            <i />
+          </div>
+          <div className="auth-payment-footer">
+            <span>Invoice INV-2025-041</span>
+            <span>Today · 10:42 AM</span>
+          </div>
+        </div>
+      </div>
+      <div className="auth-aside-foot">
+        <ShieldCheck size={15} /> Your work and client details stay yours.
+      </div>
+    </aside>
+  );
+}
 
-          <p className="mt-6 text-center text-[13.5px] text-muted-foreground">{footer}</p>
+export function AuthShell({ title, subtitle, children, footer, mode = "login" }: AuthShellProps) {
+  const isSignup = mode === "signup";
 
-          <p className="mt-8 text-center text-[11.5px] leading-relaxed text-muted-foreground/80">
-            By continuing, you agree to {brandName}'s{" "}
-            <a href="#" className="underline hover:text-foreground">
+  return (
+    <main className="auth-page">
+      <AuthAside />
+      <section className="auth-main">
+        <header className="auth-topbar">
+          <Brand mobile />
+          <p className="auth-top-prompt">{footer}</p>
+        </header>
+        <div className={`auth-content${mode === "forgot" ? " auth-content-recovery" : ""}`}>
+          {!isSignup && (
+            <span className="auth-overline">
+              {mode === "forgot" ? "ACCOUNT ACCESS" : "WELCOME BACK"}
+            </span>
+          )}
+          <h2 className="auth-title">{title}</h2>
+          <p className="auth-description">{subtitle}</p>
+
+          <div className="mt-6">{children}</div>
+
+          <p className="auth-legal">
+            By continuing, you agree to Envoiz's{" "}
+            <Link to="/terms" className="underline hover:text-foreground">
               Terms
-            </a>{" "}
+            </Link>{" "}
             and{" "}
-            <a href="#" className="underline hover:text-foreground">
+            <Link to="/privacy-policy" className="underline hover:text-foreground">
               Privacy Policy
-            </a>
+            </Link>
             .
           </p>
-        </section>
-      </main>
-    </div>
+        </div>
+      </section>
+    </main>
   );
 }

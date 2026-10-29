@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mixi Studio Template Preview</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px;
+    }
+    
+    .invoice-root {
+      --ink: #ffffff;
+      --paper: #0a0a0a;
+      --rule: #ffffff;
+      --dim: rgba(255,255,255,0.72);
+      --font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font);
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 56px 48px 64px;
+    }
+    
+    .invoice-title {
+      font-weight: 900;
+      font-size: 40px;
+      line-height: 1;
+      letter-spacing: -1.2px;
+      margin: 0 0 18px;
+    }
+    
+    .invoice-rule {
+      border: none;
+      border-top: 3px solid var(--rule);
+      margin: 0 0 16px;
+    }
+    
+    .invoice-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    
+    .invoice-client {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+    
+    .invoice-section-title {
+      font-weight: 900;
+      font-size: 48px;
+      line-height: 1;
+      letter-spacing: -1.2px;
+      margin: 0 0 20px;
+    }
+    
+    .items-header {
+      display: grid;
+      grid-template-columns: 1fr 90px 110px 100px;
+      font-weight: 700;
+      font-size: 12.5px;
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+      border-bottom: 1.5px solid var(--rule);
+    }
+    .items-header span:not(:first-child) { text-align: right; }
+    
+    .item-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 110px 100px;
+      margin-bottom: 22px;
+    }
+    .item-name {
+      font-weight: 700;
+      font-size: 13.5px;
+    }
+    .item-qty, .item-unit, .item-sub {
+      text-align: right;
+      font-size: 12.5px;
+      font-weight: 400;
+      align-self: start;
+    }
+    
+    .summary {
+      display: flex;
+      justify-content: flex-end;
+      margin: 8px 0 56px;
+    }
+    .summary-table {
+      min-width: 220px;
+      font-size: 13px;
+    }
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 3px 0;
+      font-weight: 700;
+    }
+    .summary-line--total {
+      font-weight: 900;
+    }
+    
+    .invoice-number {
+      font-weight: 900;
+      font-size: 56px;
+      line-height: 1;
+      letter-spacing: -1.2px;
+      margin: 0 0 24px;
+    }
+    
+    .footer-rule {
+      border-top: 1.5px solid var(--rule);
+      margin-bottom: 24px;
+    }
+    
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 32px;
+    }
+    
+    .footer-heading {
+      font-weight: 800;
+      font-size: 15px;
+      margin: 0 0 12px;
+    }
+    
+    .payment-block { font-size: 12.5px; }
+    .payment-line { margin-bottom: 14px; }
+    .payment-label {
+      font-weight: 700;
+      margin: 0 0 2px;
+    }
+    .payment-value {
+      font-weight: 400;
+      color: var(--dim);
+    }
+    
+    .terms-block { font-size: 9.5px; line-height: 1.5; }
+    .terms-item { margin-bottom: 10px; }
+    .terms-item-heading {
+      font-weight: 700;
+      margin: 0 0 2px;
+    }
+    .terms-item-body {
+      font-weight: 400;
+      color: var(--dim);
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-root">
+    <h1 class="invoice-title">[Mixi Studio] Invoice</h1>
+    <hr class="invoice-rule" />
+    <div class="invoice-meta-row">
+      <span>[15th July 2024]</span>
+      <span>[Due Date] N/A</span>
+    </div>
+    <div class="invoice-client">[Client Name]</div>
+
+    <h2 class="invoice-section-title">Services</h2>
+
+    <div class="items-header">
+      <span>&nbsp;</span>
+      <span>Quantity</span>
+      <span>Unit Price</span>
+      <span>Subtotal</span>
+    </div>
+
+    <div class="item-row">
+      <div>
+        <div class="item-name">Project Item #1</div>
+      </div>
+      <div class="item-qty">1</div>
+      <div class="item-unit">500.00</div>
+      <div class="item-sub">$500.00</div>
+    </div>
+
+    <div class="item-row">
+      <div>
+        <div class="item-name">Project Item #2</div>
+      </div>
+      <div class="item-qty">1</div>
+      <div class="item-unit">500.00</div>
+      <div class="item-sub">$500.00</div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-table">
+        <div class="summary-line">
+          <span>Subtotal</span>
+          <span>$1,000.00</span>
+        </div>
+        <div class="summary-line">
+          <span>Taxes</span>
+          <span>$0.00</span>
+        </div>
+        <div class="summary-line summary-line--total">
+          <span>Total Price</span>
+          <span>$1,000.00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="invoice-number">#001</div>
+    <div class="footer-rule"></div>
+
+    <div class="footer-grid">
+      <div class="payment-block">
+        <h3 class="footer-heading">Payment</h3>
+        <div class="payment-line">
+          <p class="payment-label">[Bank Transfer]</p>
+          <p class="payment-value">Your Bank Details</p>
+        </div>
+        <div class="payment-line">
+          <p class="payment-label">[Paypal]</p>
+          <p class="payment-value">Your Paypal Address</p>
+        </div>
+      </div>
+
+      <div class="terms-block">
+        <h3 class="footer-heading">Terms &amp; Conditions</h3>
+        <div class="terms-item">
+          <p class="terms-item-heading">Payment Terms</p>
+          <p class="terms-item-body">Payment is due within 14 days of the invoice date.</p>
+        </div>
+        <div class="terms-item">
+          <p class="terms-item-heading">Ownership &amp; Rights</p>
+          <p class="terms-item-body">All work remains property of Mixi Studio until payment.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

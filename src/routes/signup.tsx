@@ -1,14 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AuthShell } from "@/components/auth/AuthShell";
+import { useEffect } from "react";
+
 import { AuthForm } from "@/components/auth/AuthForm";
+import { useAuth } from "@/components/auth/auth-context";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Sign up - Envoiz" },
+      { title: "Create your account — Envoiz" },
       {
         name: "description",
-        content: "Create your free Envoiz account and start sending beautiful invoices in minutes.",
+        content: "Create your workspace and keep the business side of your work in good order.",
       },
     ],
   }),
@@ -16,18 +19,24 @@ export const Route = createFileRoute("/signup")({
 });
 
 function SignupPage() {
+  const { session, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && session) {
+      window.location.replace("/dashboard");
+    }
+  }, [loading, session]);
+
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Start sending beautiful invoices in minutes."
+      subtitle="Create your workspace and keep the business side of your work in good order."
       footer={
         <>
-          Already have an account?{" "}
-          <Link to="/login" className="font-medium text-foreground hover:underline">
-            Log in
-          </Link>
+          Already have an account? <Link to="/login">Sign in</Link>
         </>
       }
+      mode="signup"
     >
       <AuthForm mode="signup" />
     </AuthShell>

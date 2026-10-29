@@ -1,5 +1,4 @@
-import { brandName } from "@/lib/envoiz";
-import { envoizLpLogoDataUri } from "@/lib/envoiz-logo-data";
+import { brandName, faviconUrl } from "@/lib/envoiz";
 
 type BrandLogoProps = {
   variant?: "horizontal" | "icon";
@@ -10,30 +9,37 @@ export function BrandLogo({ variant = "horizontal", className }: BrandLogoProps)
   if (variant === "icon") {
     return (
       <img
-        src={envoizLpLogoDataUri}
+        src={faviconUrl}
         alt={brandName}
-        width={248}
-        height={80}
+        width={512}
+        height={512}
         loading="eager"
         decoding="async"
         fetchPriority="high"
         style={{ objectFit: "contain" }}
-        className={className ?? "h-8 w-auto"}
+        className={className ?? "h-6 w-6"}
       />
     );
   }
 
   return (
-    <img
-      src={envoizLpLogoDataUri}
-      alt={brandName}
-      width={248}
-      height={80}
-      loading="eager"
-      decoding="async"
-      fetchPriority="high"
-      style={{ objectFit: "contain" }}
-      className={className ?? "h-10 w-auto"}
-    />
+    <span
+      className={className ?? "inline-flex h-11 w-auto items-center gap-2"}
+      style={{ display: "inline-flex", alignItems: "center", gap: "0.42em" }}
+    >
+      <img
+        src={faviconUrl}
+        alt=""
+        width={512}
+        height={512}
+        loading="eager"
+        decoding="async"
+        fetchPriority="high"
+        style={{ objectFit: "contain", width: "auto", height: "100%", flexShrink: 0 }}
+      />
+      <span style={{ fontSize: "0.58em", fontWeight: 700, letterSpacing: "-0.045em" }}>
+        {brandName}
+      </span>
+    </span>
   );
 }
