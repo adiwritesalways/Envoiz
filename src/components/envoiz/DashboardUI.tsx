@@ -164,9 +164,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-[#1F1F1F] bg-[#121212]/50 p-8 text-center">
-      <h3 className="text-[15px] font-medium text-white">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-neutral-400">
+    <div className="rounded-3xl border border-dashed border-hairline bg-surface/60 p-8 text-center">
+      <h3 className="text-[15px] font-medium">{title}</h3>
+      <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-muted-foreground">
         {description}
       </p>
       {action && <div className="mt-5 flex justify-center">{action}</div>}

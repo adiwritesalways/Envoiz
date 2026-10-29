@@ -5,12 +5,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 
 interface AuthShellProps {
   title: string;
-  /** Text before the CTA link */
-  subtitleText?: string;
-  /** Link label */
-  subtitleLinkLabel?: string;
-  /** Link destination */
-  subtitleLinkTo?: string;
+  subtitle: string;
   children: ReactNode;
   footer: ReactNode;
   mode?: "login" | "signup" | "forgot";

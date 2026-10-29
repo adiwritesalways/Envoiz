@@ -13,7 +13,6 @@ export const Route = createFileRoute("/signup")({
         name: "description",
         content: "Create your workspace and keep the business side of your work in good order.",
       },
-      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: SignupPage,
@@ -39,7 +38,7 @@ function SignupPage() {
       }
       mode="signup"
     >
-      <AuthForm />
+      <AuthForm mode="signup" />
     </AuthShell>
   );
 }
